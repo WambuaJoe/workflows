@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Workflows
 
-## Getting Started
+A drag-and-drop builder for automation rules, built with Next.js, React and Motion.
 
-First, run the development server:
+![The Automations screen: an onboarding rule on the canvas, with the selected step's panel open](docs/preview.jpg)
+
+## Features
+
+- **Canvas**: pan, zoom and drag steps around; connectors re-route as you move them.
+- **Steps**: continue a path with **+**, split a condition into role-based paths, limit any step to certain roles, and give each step an ordered list of actions.
+- **Apps**: drag Slack, Asana, Mailchimp, Zapier or Spotify onto the canvas to create a step, or onto a step's **Add action** box to add it there.
+- **Safe edits**: every change can be undone, and deletes that would break the flow are refused with a reason.
+- **Motion**: cards, connectors, the panel and menus animate in and out, and reduced-motion settings are respected.
+- **Keyboard**: every control is reachable without a mouse.
+
+## Getting started
+
+You'll need Node.js 20.9 or later.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command                | What it does                      |
+| ---------------------- | --------------------------------- |
+| `npm run dev`          | Start the dev server              |
+| `npm run build`        | Build for production              |
+| `npm run start`        | Serve the production build        |
+| `npm run lint`         | Lint with ESLint                  |
+| `npm run format`       | Format with Prettier              |
+| `npm run format:check` | Check formatting without changing |
 
-## Learn More
+## Keyboard shortcuts
 
-To learn more about Next.js, take a look at the following resources:
+| Keys                                          | Action                                     |
+| --------------------------------------------- | ------------------------------------------ |
+| <kbd>V</kbd> / <kbd>H</kbd>                   | Select tool / pan tool                     |
+| Hold <kbd>Space</kbd>                         | Pan while held                             |
+| Arrow keys                                    | Nudge the selected step (with Shift: more) |
+| <kbd>Delete</kbd>                             | Delete the selected step                   |
+| <kbd>Ctrl</kbd> <kbd>Z</kbd>                  | Undo                                       |
+| <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>Z</kbd> | Redo                                       |
+| <kbd>Ctrl</kbd> + scroll                      | Zoom                                       |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+On macOS, use <kbd>⌘</kbd> in place of <kbd>Ctrl</kbd>.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project structure
 
-## Deploy on Vercel
+```
+app/                     Layout, page, and global styles and design tokens
+lib/flow/                The automation model: types, catalogue, geometry and edits
+components/
+  automation-builder.tsx The Automations screen
+  builder/               Editor state, app dragging and shared step visuals
+    canvas/              Canvas, pan and zoom, step cards, connectors and toolbar
+    panel/               The properties panel, one file per section
+  shell/                 Sidebar and top bar
+  ui/                    Dropdown menu
+  icons/                 Phosphor icons at the design's sizes, plus a few original glyphs
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The model in `lib/flow` is plain data and pure functions with no React. Every edit returns a new document, so undo and redo are just a history of snapshots.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Status
+
+This is a front-end prototype. Changes live in the browser and reset on reload, and only the Automations screen is built; the other navigation items are placeholders.
+
+## Built with
+
+[Next.js](https://nextjs.org), [React](https://react.dev), [TypeScript](https://www.typescriptlang.org), [Tailwind CSS](https://tailwindcss.com), [Motion](https://motion.dev), [Phosphor Icons](https://phosphoricons.com) and the [Figtree](https://fonts.google.com/specimen/Figtree) typeface. All interface icons are Phosphor (MIT) or drawn for this project. Logos for linked apps load from [Dashboard Icons](https://dashboardicons.com) and belong to their respective owners.
+
+## License
+
+[MIT](LICENSE)
