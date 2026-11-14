@@ -68,7 +68,7 @@ The model in `lib/flow` is plain data and pure functions with no React. Every ed
 
 ## Status
 
-This is a front-end prototype. Changes live in the browser and reset on reload, and only the Automations screen is built; the other navigation items are placeholders.
+This is a front-end prototype. Changes live in the browser and reset on reload. Only the Automations screen is built, and these are placeholders for now: the other navigation items, **Ask AI**, **Invite**, notifications, **New project**, the account menu, the **⋯** on each step and the **Learn more** links.
 
 ## Built with
 

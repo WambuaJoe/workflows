@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Reorder, motion } from "motion/react";
 import { CaretUpDownIcon, MagnifyingGlassIcon, PlusIcon } from "@phosphor-icons/react";
 import {
@@ -14,9 +14,9 @@ import {
   SettingsIcon,
   SidebarToggleIcon,
   TemplatesIcon,
+  OptimaMark,
   WorkflowIcon,
 } from "@/components/icons";
-import { OptimaMark } from "@/components/icons";
 import { cn } from "@/lib/cn";
 
 type NavItem = { id: string; label: string; icon: ReactNode; badge?: string };
@@ -70,6 +70,12 @@ export function Sidebar() {
   const [active, setActive] = useState("automations");
   const [menu, setMenu] = useState(MENU);
   const [projects, setProjects] = useState(PROJECTS);
+  // The first client render may correct the server's guess at the width; don't animate that.
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setSettled(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
   const collapsed = override ?? narrow;
   const fade = cn(
     "transition-opacity duration-150 ease-out",
@@ -80,6 +86,7 @@ export function Sidebar() {
     <aside
       className={cn(
         "relative flex h-full shrink-0 flex-col overflow-hidden border-r border-line bg-white transition-[width] duration-[220ms] ease-out motion-reduce:transition-none",
+        !settled && "no-transitions",
         collapsed ? "w-[68px]" : "w-[260px]",
       )}
     >

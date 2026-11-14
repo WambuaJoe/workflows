@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef } from "react";
 import { AnimatePresence, Reorder, motion, useDragControls } from "motion/react";
 import { UserIcon, XIcon } from "@phosphor-icons/react";
 import { ConditionIcon } from "@/components/icons";
@@ -18,23 +18,28 @@ import { useReorderable } from "./use-reorderable";
 
 /** The condition's type and its rows, which reorder by their handles. */
 export function ConditionFields({
+  type,
+  onTypeChange,
   conditions,
   onChange,
+  onAddRow,
 }: {
+  type: string;
+  onTypeChange: (type: string) => void;
   conditions: ConditionRow[];
   onChange: (rows: ConditionRow[]) => void;
+  onAddRow: () => void;
 }) {
-  const [type, setType] = useState(CONDITION_TYPES[0]);
   const { order, setOrder, commit, move } = useReorderable(conditions, onChange);
+  const addLink = useRef<HTMLButtonElement>(null);
 
   const updateRow = (id: string, patch: Partial<ConditionRow>) =>
     onChange(conditions.map((r) => (r.id === id ? { ...r, ...patch } : r)));
 
-  const addRow = () =>
-    onChange([
-      ...conditions,
-      { id: crypto.randomUUID(), subject: "User property", attributes: [] },
-    ]);
+  const removeRow = (id: string) => {
+    onChange(conditions.filter((r) => r.id !== id));
+    requestAnimationFrame(() => addLink.current?.focus());
+  };
 
   return (
     <div className="mb-3">
@@ -45,7 +50,7 @@ export function ConditionFields({
         icon={<ConditionIcon size={15} className="text-cyan" />}
         value={type}
         options={CONDITION_TYPES}
-        onChange={setType}
+        onChange={onTypeChange}
       />
 
       <Divider className="my-4" />
@@ -66,7 +71,7 @@ export function ConditionFields({
               row={row}
               canRemove={order.length > 1}
               onUpdate={(patch) => updateRow(row.id, patch)}
-              onRemove={() => onChange(conditions.filter((r) => r.id !== row.id))}
+              onRemove={() => removeRow(row.id)}
               onMove={(by) => move(row.id, by)}
               onDragEnd={commit}
             />
@@ -75,7 +80,9 @@ export function ConditionFields({
       </Reorder.Group>
 
       {conditions.length < CONDITION_ATTRIBUTES.length && (
-        <AddLink onClick={addRow}>Add condition</AddLink>
+        <AddLink ref={addLink} onClick={onAddRow}>
+          Add condition
+        </AddLink>
       )}
     </div>
   );
@@ -171,7 +178,7 @@ function AttributeSelect({
   return (
     <Dropdown
       className="w-full"
-      trigger={({ open, toggle: toggleMenu, menuId }) => (
+      trigger={({ open, toggle: toggleMenu, menuId, triggerId }) => (
         <div className="flex h-[38px] items-center gap-1 rounded-[10px] border border-line bg-white pr-1 pl-2 shadow-xs">
           <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
             <AnimatePresence mode="popLayout" initial={false}>
@@ -228,6 +235,7 @@ function AttributeSelect({
             aria-label="Choose attributes"
             aria-haspopup="menu"
             aria-expanded={open}
+            id={triggerId}
             aria-controls={open ? menuId : undefined}
             onClick={toggleMenu}
             className="grid size-7 shrink-0 place-items-center rounded-[7px] text-ink-soft transition-colors duration-150 hover:bg-hover hover:text-ink"

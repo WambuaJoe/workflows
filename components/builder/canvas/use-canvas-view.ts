@@ -5,12 +5,15 @@ import { animate, useReducedMotion, type AnimationPlaybackControls } from "motio
 import { FRAME_WIDTH, type Bounds } from "@/lib/flow";
 import { EASE_IN_OUT } from "@/lib/motion";
 
-export type View = { x: number; y: number; scale: number };
+type View = { x: number; y: number; scale: number };
 
 /** At scale 1 the flow renders at the size the design labels 72%. */
 export const BASE_ZOOM = 72;
 /** Space kept clear under the flow for the floating toolbar. */
-export const TOOLBAR_CLEARANCE = 92;
+const TOOLBAR_CLEARANCE = 92;
+/** Largest wheel delta per event, so a mouse notch (~100px) zooms gently like a pinch. */
+const MAX_WHEEL_DELTA = 15;
+const LINE_HEIGHT_PX = 33;
 
 const MIN_SCALE = 25 / BASE_ZOOM;
 const MAX_SCALE = 200 / BASE_ZOOM;
@@ -116,10 +119,10 @@ export function useCanvasView(
     const el = surfaceRef.current;
     if (!el) return;
     const observer = new ResizeObserver(([entry]) => {
+      setReady(true);
       if (userOwnsView.current) return;
       const { width, height } = entry.contentRect;
       setView(frameView(width, height, latest.current.inset, latest.current.bounds));
-      setReady(true);
     });
     observer.observe(el);
     return () => observer.disconnect();
@@ -136,7 +139,10 @@ export function useCanvasView(
         const rect = el.getBoundingClientRect();
         const px = e.clientX - rect.left;
         const py = e.clientY - rect.top;
-        setView((v) => zoomAround(v, v.scale * Math.exp(-e.deltaY * 0.01), px, py));
+        const raw =
+          e.deltaMode === WheelEvent.DOM_DELTA_LINE ? e.deltaY * LINE_HEIGHT_PX : e.deltaY;
+        const delta = Math.max(-MAX_WHEEL_DELTA, Math.min(MAX_WHEEL_DELTA, raw));
+        setView((v) => zoomAround(v, v.scale * Math.exp(-delta * 0.01), px, py));
       } else {
         setView((v) => ({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY }));
       }

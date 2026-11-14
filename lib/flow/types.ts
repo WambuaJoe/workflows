@@ -24,6 +24,8 @@ export type StepAction = {
 
 export type ActionTemplate = Omit<StepAction, "id">;
 
+export type StepSettings = { oncePerPerson: boolean; pauseOnError: boolean; notes: string };
+
 export type Step = {
   id: string;
   kind: StepKind;
@@ -44,6 +46,8 @@ export type Step = {
   match?: RoleKey;
   /** Other steps: the roles it runs for. Empty means everyone. */
   audience?: RoleKey[];
+  /** Absent until changed; see DEFAULT_SETTINGS. */
+  settings?: StepSettings;
 };
 
 export type Link = { from: string; to: string };
@@ -55,6 +59,7 @@ export type Doc = {
   name: string;
   steps: Step[];
   links: Link[];
+  conditionType: string;
   /** Rows of the condition; the first one titles it. */
   conditions: ConditionRow[];
   nextId: number;

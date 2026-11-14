@@ -127,10 +127,14 @@ export function TopBar({ name, status, onSave }: TopBarProps) {
               ) : (
                 <ShareIcon />
               )}
-              <span aria-live="polite">{copied ? "Link copied" : "Share"}</span>
+              {copied ? "Link copied" : "Share"}
             </motion.span>
           </AnimatePresence>
         </button>
+        {/* Outside the swapping label, so screen readers hear the change. */}
+        <span className="sr-only" aria-live="polite">
+          {copied ? "Link copied" : ""}
+        </span>
         <button
           type="button"
           onClick={onSave}

@@ -1,5 +1,5 @@
 import type { AppInfo } from "./apps";
-import type { ActionTemplate, RoleKey } from "./types";
+import type { ActionTemplate, RoleKey, StepSettings } from "./types";
 
 type Role = { label: string; title: string; tags: string[]; description: string };
 
@@ -59,6 +59,12 @@ export const ROLE_ORDER: RoleKey[] = [
 
 /** Roles a step can be limited to. "Anyone else" only makes sense as a path. */
 export const AUDIENCE_ROLES: RoleKey[] = ROLE_ORDER.filter((role) => role !== "else");
+
+export const DEFAULT_SETTINGS: StepSettings = {
+  oncePerPerson: true,
+  pauseOnError: false,
+  notes: "",
+};
 
 export const CONDITION_TYPES = ["New step", "Wait for event", "Time delay"];
 export const CONDITION_SUBJECTS = ["User selects", "User property", "Event occurred"];

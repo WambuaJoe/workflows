@@ -22,7 +22,6 @@
 
   /* Brand */
   --color-brand: #1e5b70;
-  --color-brand-strong: #164b5d;
   --color-brand-soft: #dde9ed;
   --color-logo: #105069;
 
@@ -115,4 +114,10 @@
 .is-grabbing * {
   cursor: grabbing !important;
   user-select: none;
+}
+
+/* Holds transitions off while a component settles after hydration. */
+.no-transitions,
+.no-transitions * {
+  transition: none !important;
 }

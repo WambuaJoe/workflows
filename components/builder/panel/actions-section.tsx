@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { AnimatePresence, Reorder, motion, useDragControls } from "motion/react";
 import {
   BellIcon,
@@ -11,7 +11,7 @@ import {
   TagIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import { Dropdown, MenuItem, MenuLabel, MenuSeparator } from "@/components/ui/dropdown";
+import { Dropdown, MenuGroup, MenuItem, MenuSeparator } from "@/components/ui/dropdown";
 import { cn } from "@/lib/cn";
 import {
   ACTION_TEMPLATES,
@@ -66,7 +66,14 @@ export function ActionsSection({
   dropActive: boolean;
 }) {
   const { order, setOrder, commit, move } = useReorderable(actions, onChange);
+  const addButton = useRef<HTMLButtonElement>(null);
   const compact = actions.length > 0;
+
+  const remove = (id: string) => {
+    onChange(actions.filter((a) => a.id !== id));
+    // The removed row had focus; the add box is the natural next stop.
+    requestAnimationFrame(() => addButton.current?.focus());
+  };
 
   const addItem = (template: ActionTemplate, close: () => void) => (
     <MenuItem
@@ -96,7 +103,7 @@ export function ActionsSection({
             <ActionRow
               key={action.id}
               action={action}
-              onRemove={() => onChange(actions.filter((a) => a.id !== action.id))}
+              onRemove={() => remove(action.id)}
               onMove={(by) => move(action.id, by)}
               onDragEnd={commit}
             />
@@ -107,13 +114,15 @@ export function ActionsSection({
       <Dropdown
         className="w-full"
         menuClassName="w-full max-h-[320px] overflow-y-auto"
-        trigger={({ open, toggle, menuId }) => (
+        trigger={({ open, toggle, menuId, triggerId }) => (
           <motion.button
+            ref={addButton}
             type="button"
             data-action-dropzone
             onClick={toggle}
             aria-haspopup="menu"
             aria-expanded={open}
+            id={triggerId}
             aria-controls={open ? menuId : undefined}
             initial={false}
             // Tall and empty as in the design; tucks under the list once actions exist.
@@ -133,11 +142,13 @@ export function ActionsSection({
       >
         {(close) => (
           <>
-            <MenuLabel>Actions</MenuLabel>
-            {ACTION_TEMPLATES.map((template) => addItem(template, close))}
+            <MenuGroup label="Actions">
+              {ACTION_TEMPLATES.map((template) => addItem(template, close))}
+            </MenuGroup>
             <MenuSeparator />
-            <MenuLabel>Linked apps</MenuLabel>
-            {APPS.map((app) => addItem(appAction(app), close))}
+            <MenuGroup label="Linked apps">
+              {APPS.map((app) => addItem(appAction(app), close))}
+            </MenuGroup>
           </>
         )}
       </Dropdown>

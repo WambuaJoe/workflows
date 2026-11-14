@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import type { DragControls } from "motion/react";
 import { DotsSixVerticalIcon, PlusIcon } from "@phosphor-icons/react";
 import { Dropdown, MenuCaret, MenuItem } from "@/components/ui/dropdown";
@@ -26,6 +26,7 @@ export function Divider({ className }: { className?: string }) {
 export function SelectButton({
   open,
   menuId,
+  triggerId,
   label,
   icon,
   onClick,
@@ -33,6 +34,7 @@ export function SelectButton({
 }: {
   open: boolean;
   menuId: string;
+  triggerId: string;
   /** Accessible name, including the current value. */
   label: string;
   icon: ReactNode;
@@ -46,6 +48,7 @@ export function SelectButton({
       aria-label={label}
       aria-haspopup="menu"
       aria-expanded={open}
+      id={triggerId}
       aria-controls={open ? menuId : undefined}
       className="flex min-h-[38px] w-full items-center gap-2.5 rounded-[10px] border border-line bg-white py-1.5 pr-2.5 pl-3 text-left text-[14px] font-medium shadow-xs transition-colors duration-150 hover:bg-hover"
     >
@@ -77,10 +80,11 @@ export function SelectField({
   return (
     <Dropdown
       className={cn("w-full", className)}
-      trigger={({ open, toggle, menuId }) => (
+      trigger={({ open, toggle, menuId, triggerId }) => (
         <SelectButton
           open={open}
           menuId={menuId}
+          triggerId={triggerId}
           label={`${label}: ${value}`}
           icon={icon}
           onClick={toggle}
@@ -147,9 +151,18 @@ export function DragHandle({
 }
 
 /** Small brand-coloured "+ Add …" button. */
-export function AddLink({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+export function AddLink({
+  onClick,
+  children,
+  ref,
+}: {
+  onClick: () => void;
+  children: ReactNode;
+  ref?: Ref<HTMLButtonElement>;
+}) {
   return (
     <button
+      ref={ref}
       type="button"
       onClick={onClick}
       className="mt-2 inline-flex h-7 items-center gap-1.5 rounded-[8px] px-1.5 text-[12.5px] font-medium text-brand transition-colors duration-150 hover:bg-brand-soft/50"

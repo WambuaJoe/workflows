@@ -68,6 +68,8 @@ export function useAppDrag({ canvasApi, steps, onDropOnCanvas, onDropOnStep }: O
       let active = false;
 
       const onMove = (ev: PointerEvent) => {
+        // The release happened somewhere we didn't hear about; treat it as a cancel.
+        if (ev.buttons === 0) return finish(null);
         if (!active) {
           if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < DRAG_THRESHOLD) return;
           active = true;
@@ -94,10 +96,14 @@ export function useAppDrag({ canvasApi, steps, onDropOnCanvas, onDropOnStep }: O
           else if (preview) latest.current.onDropOnCanvas(preview);
         }
         setDrag(null);
-        // The click that follows pointerup belongs to the drag; let it pass first.
-        window.setTimeout(() => {
-          justDragged.current = false;
-        }, 0);
+        // The click after the release belongs to the drag, so keep ignoring clicks until then.
+        // A cancelled drag (Escape) hasn't been released yet, so wait for that release.
+        const resetAfterClick = () =>
+          window.setTimeout(() => {
+            justDragged.current = false;
+          }, 0);
+        if (ev) resetAfterClick();
+        else window.addEventListener("pointerup", resetAfterClick, { once: true });
       };
       const onUp = (ev: PointerEvent) => finish(ev);
       const onCancel = () => finish(null);

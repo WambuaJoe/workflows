@@ -1,6 +1,7 @@
 "use client";
 
 import { TrashIcon } from "@phosphor-icons/react";
+import type { StepAction } from "@/lib/flow";
 import { StepBadge, Tag } from "../step-parts";
 import { ActionsSection } from "./actions-section";
 import { ConditionFields } from "./condition-fields";
@@ -10,6 +11,9 @@ import { PathsList } from "./paths-list";
 import { RoleField } from "./role-field";
 import type { StepPanelProps } from "./types";
 
+// Stable, so steps without actions don't hand the list a new array every render.
+const NO_ACTIONS: StepAction[] = [];
+
 export function PropertiesTab(props: StepPanelProps) {
   const { step, onDelete } = props;
 
@@ -18,7 +22,10 @@ export function PropertiesTab(props: StepPanelProps) {
       <section className="border-b border-line px-4 pt-5 pb-5">
         <div className="flex items-center gap-3">
           <StepBadge step={step} size="lg" />
-          <h2 className="truncate text-[17px] font-semibold tracking-[-0.01em]">
+          <h2
+            tabIndex={-1}
+            className="truncate text-[17px] font-semibold tracking-[-0.01em] outline-none"
+          >
             {step.panel.title}
           </h2>
           {step.panel.tags.map((tag) => (
@@ -48,12 +55,18 @@ export function PropertiesTab(props: StepPanelProps) {
         <RoleField {...props} />
         {step.kind === "condition" && (
           <>
-            <ConditionFields conditions={props.conditions} onChange={props.onConditionsChange} />
+            <ConditionFields
+              type={props.conditionType}
+              onTypeChange={props.onConditionTypeChange}
+              conditions={props.conditions}
+              onChange={props.onConditionsChange}
+              onAddRow={props.onAddConditionRow}
+            />
             <PathsList paths={props.paths} onSelect={props.onSelectStep} onAdd={props.onAddPath} />
           </>
         )}
         <ActionsSection
-          actions={step.actions ?? []}
+          actions={step.actions ?? NO_ACTIONS}
           onAdd={props.onAddAction}
           onChange={props.onActionsChange}
           dropActive={props.appDropActive}

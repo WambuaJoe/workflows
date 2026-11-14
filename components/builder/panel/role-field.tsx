@@ -50,10 +50,11 @@ function PathRole({
       />
       <Dropdown
         className="mt-2.5 w-full"
-        trigger={({ open, toggle, menuId }) => (
+        trigger={({ open, toggle, menuId, triggerId }) => (
           <SelectButton
             open={open}
             menuId={menuId}
+            triggerId={triggerId}
             label={`Path for: ${ROLES[role].label}`}
             icon={<ChipGlyph icon={role} size={15} />}
             onClick={toggle}
@@ -100,10 +101,11 @@ function Audience({
       />
       <Dropdown
         className="mt-2.5 w-full"
-        trigger={({ open, toggle: toggleMenu, menuId }) => (
+        trigger={({ open, toggle: toggleMenu, menuId, triggerId }) => (
           <SelectButton
             open={open}
             menuId={menuId}
+            triggerId={triggerId}
             label={`Runs for: ${summary}`}
             icon={<UsersThreeIcon size={16} weight="fill" className="text-icon" />}
             onClick={toggleMenu}

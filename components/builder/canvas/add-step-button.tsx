@@ -8,10 +8,13 @@ import { EASE_OUT } from "@/lib/motion";
 /** The "+" under the last step of a path. */
 export function AddStepButton({
   button,
+  label,
   delay,
   onAdd,
 }: {
   button: AddButton;
+  /** Names the step it continues, so screen readers can tell the "+" buttons apart. */
+  label: string;
   delay: number;
   onAdd: (parentId: string) => void;
 }) {
@@ -23,8 +26,8 @@ export function AddStepButton({
     >
       <motion.button
         type="button"
-        aria-label="Add step"
-        title="Add step"
+        aria-label={label}
+        title={label}
         onClick={() => onAdd(button.parentId)}
         initial={{ opacity: 0, transform: "scale(0.9)" }}
         animate={{

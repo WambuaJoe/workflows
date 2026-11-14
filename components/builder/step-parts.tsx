@@ -17,7 +17,7 @@ import {
   PathsIcon,
   PlayIcon,
 } from "@/components/icons";
-import { MenuItem, MenuLabel } from "@/components/ui/dropdown";
+import { MenuGroup, MenuItem } from "@/components/ui/dropdown";
 import { cn } from "@/lib/cn";
 import {
   APP_BY_KEY,
@@ -31,7 +31,7 @@ import {
   type StepKind,
 } from "@/lib/flow";
 
-// Design icons render at their drawn size unless one is given; roles the design lacks use Phosphor.
+// Chip icons render at their default size unless one is given.
 const CHIP_ICONS: Record<ChipIcon, (size?: number) => ReactNode> = {
   play: (s) => <PlayIcon size={s} />,
   doThis: (s) => <DoThisIcon size={s} />,
@@ -137,8 +137,7 @@ export function RoleMenuItems({
   onSelect: (role: RoleKey) => void;
 }) {
   return (
-    <>
-      <MenuLabel>Path for</MenuLabel>
+    <MenuGroup label="Path for">
       {ROLE_ORDER.map((role) => {
         const inUse = role !== current && taken.includes(role);
         return (
@@ -154,6 +153,6 @@ export function RoleMenuItems({
           </MenuItem>
         );
       })}
-    </>
+    </MenuGroup>
   );
 }

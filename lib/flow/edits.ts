@@ -1,7 +1,7 @@
 import { APP_BY_KEY, type AppKey } from "./apps";
-import { ROLES, ROLE_ORDER } from "./catalog";
-import { FRAME_OFFSET_X, placeBelow } from "./geometry";
-import type { ActionTemplate, Doc, RoleKey, Step, StepAction } from "./types";
+import { DEFAULT_SETTINGS, ROLES, ROLE_ORDER } from "./catalog";
+import { placeBelow } from "./geometry";
+import type { ActionTemplate, Doc, RoleKey, Step, StepAction, StepSettings } from "./types";
 
 type Point = { x: number; y: number };
 
@@ -26,7 +26,7 @@ export function createPath(id: string, match: RoleKey, at: Point): Step {
 }
 
 /** An action step, preset for a linked app when one is given. */
-export function createAction(id: string, at: Point, appKey?: AppKey): Step {
+function createAction(id: string, at: Point, appKey?: AppKey): Step {
   const app = appKey ? APP_BY_KEY[appKey] : undefined;
   const title = app?.action ?? "Untitled action";
   return {
@@ -59,8 +59,7 @@ export function addStep(
   options: { app?: AppKey; at?: Point } = {},
 ): Doc {
   const id = nextStepId(doc);
-  const at =
-    options.at ?? (parentId ? placeBelow(doc.steps, parentId) : { x: FRAME_OFFSET_X, y: 40 });
+  const at = options.at ?? placeBelow(doc.steps, parentId);
   return {
     ...doc,
     nextId: doc.nextId + 1,
@@ -106,6 +105,24 @@ export const setAudience = (doc: Doc, stepId: string, audience: RoleKey[]) =>
 
 export const setPathRole = (doc: Doc, stepId: string, match: RoleKey) =>
   updateStep(doc, stepId, { match });
+
+export function updateSettings(doc: Doc, stepId: string, patch: Partial<StepSettings>): Doc {
+  const step = doc.steps.find((s) => s.id === stepId);
+  if (!step) return doc;
+  return updateStep(doc, stepId, { settings: { ...DEFAULT_SETTINGS, ...step.settings, ...patch } });
+}
+
+/** Adds an empty row to the condition. */
+export function addConditionRow(doc: Doc): Doc {
+  return {
+    ...doc,
+    nextId: doc.nextId + 1,
+    conditions: [
+      ...doc.conditions,
+      { id: `condition-${doc.nextId}`, subject: "User property", attributes: [] },
+    ],
+  };
+}
 
 export function moveStep(doc: Doc, id: string, x: number, y: number): Doc {
   const step = doc.steps.find((s) => s.id === id);

@@ -58,6 +58,8 @@ type FlowCanvasProps = {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   onMoveStep: (id: string, x: number, y: number) => void;
+  /** Keyboard nudges; consecutive ones of the same step undo together. */
+  onNudgeStep: (id: string, dx: number, dy: number) => void;
   onAddStep: (parentId: string) => void;
   onDeleteStep: (id: string) => void;
   takenRoles: RoleKey[];
@@ -83,6 +85,7 @@ export function FlowCanvas({
   selectedId,
   onSelect,
   onMoveStep,
+  onNudgeStep,
   onAddStep,
   onDeleteStep,
   takenRoles,
@@ -101,6 +104,7 @@ export function FlowCanvas({
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<Tool>("select");
   const [spaceHeld, setSpaceHeld] = useState(false);
+  const spaceHeldRef = useRef(false);
   const [panning, setPanning] = useState(false);
   const [intro, setIntro] = useState(true);
   const [dragged, setDragged] = useState<{ id: string; x: number; y: number } | null>(null);
@@ -124,6 +128,7 @@ export function FlowCanvas({
     selectedId,
     onSelect,
     onMoveStep,
+    onNudgeStep,
     onDeleteStep,
     onUndo,
     onRedo,
@@ -135,6 +140,7 @@ export function FlowCanvas({
       selectedId,
       onSelect,
       onMoveStep,
+      onNudgeStep,
       onDeleteStep,
       onUndo,
       onRedo,
@@ -188,35 +194,53 @@ export function FlowCanvas({
       }
       if (mod || e.altKey) return;
 
-      const onBackground = e.target === document.body || e.target === surfaceRef.current;
+      const target = e.target instanceof HTMLElement ? e.target : null;
       const onCanvas =
-        onBackground || (e.target instanceof Node && !!surfaceRef.current?.contains(e.target));
-      const selected = l.steps.find((s) => s.id === l.selectedId);
+        e.target === document.body || (!!target && !!surfaceRef.current?.contains(target));
+      // Arrows and Delete act on the focused card, else on the selection.
+      const focusedId = target?.closest<HTMLElement>("[data-step-id]")?.dataset.stepId;
+      const subject = l.steps.find((s) => s.id === (focusedId ?? l.selectedId));
+      // Keyboard users keep Space for activating what they've focused; everyone else pans.
+      const spaceActivates =
+        !!target?.closest('[role="menu"]') ||
+        (target !== document.body && !!target?.matches(":focus-visible"));
 
       if (key === "v") setTool("select");
       else if (key === "h") setTool("hand");
-      else if (e.code === "Space" && onBackground) {
+      else if (e.code === "Space" && !spaceActivates) {
         e.preventDefault();
-        if (!e.repeat) setSpaceHeld(true);
-      } else if (onCanvas && selected && e.key.startsWith("Arrow")) {
+        if (!spaceHeldRef.current) {
+          spaceHeldRef.current = true;
+          setSpaceHeld(true);
+        }
+      } else if (onCanvas && subject && e.key.startsWith("Arrow")) {
         e.preventDefault();
         const step = e.shiftKey ? NUDGE * 4 : NUDGE;
         const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
         const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
-        l.onMoveStep(selected.id, selected.x + dx, selected.y + dy);
-      } else if (onCanvas && selected && (e.key === "Delete" || e.key === "Backspace")) {
+        l.onNudgeStep(subject.id, dx, dy);
+      } else if (onCanvas && subject && (e.key === "Delete" || e.key === "Backspace")) {
         e.preventDefault();
-        l.onDeleteStep(selected.id);
+        l.onDeleteStep(subject.id);
       }
     };
+    const releaseSpace = () => {
+      spaceHeldRef.current = false;
+      setSpaceHeld(false);
+    };
     const onKeyUp = (e: KeyboardEvent) => {
-      if (e.code === "Space") setSpaceHeld(false);
+      if (e.code !== "Space" || !spaceHeldRef.current) return;
+      // Stops a mouse-focused button from being clicked when Space is released.
+      e.preventDefault();
+      releaseSpace();
     };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", releaseSpace);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", releaseSpace);
     };
   }, []);
 
@@ -236,9 +260,21 @@ export function FlowCanvas({
     setPanning(true);
   };
 
+  const endPan = (released: boolean) => {
+    const p = pan.current;
+    if (!p) return;
+    pan.current = null;
+    setPanning(false);
+    document.body.classList.remove("is-grabbing");
+    // A plain click on empty canvas clears the selection.
+    if (released && !p.moved && !handMode) onSelect(null);
+  };
+
   const onSurfacePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const p = pan.current;
     if (!p) return;
+    // The release happened somewhere we didn't hear about (another window, say).
+    if (e.buttons === 0) return endPan(false);
     const dx = e.clientX - p.sx;
     const dy = e.clientY - p.sy;
     if (!p.moved) {
@@ -248,16 +284,6 @@ export function FlowCanvas({
       document.body.classList.add("is-grabbing");
     }
     panTo(p.ox + dx, p.oy + dy);
-  };
-
-  const onSurfacePointerUp = () => {
-    const p = pan.current;
-    if (!p) return;
-    pan.current = null;
-    setPanning(false);
-    document.body.classList.remove("is-grabbing");
-    // A plain click on empty canvas clears the selection.
-    if (!p.moved && !handMode) onSelect(null);
   };
 
   // Pressing a card selects it; dragging past the threshold moves it, committed as one undo step.
@@ -277,6 +303,7 @@ export function FlowCanvas({
         y: Math.round(step.y + (ev.clientY - sy) / scale),
       });
       const onMove = (ev: PointerEvent) => {
+        if (ev.buttons === 0) return finish(ev);
         if (!moved) {
           if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < DRAG_THRESHOLD) return;
           moved = true;
@@ -313,12 +340,15 @@ export function FlowCanvas({
       <div
         ref={surfaceRef}
         data-canvas-surface
+        tabIndex={-1}
+        aria-label="Rule canvas"
         onPointerDown={onSurfacePointerDown}
         onPointerMove={onSurfacePointerMove}
-        onPointerUp={onSurfacePointerUp}
-        onPointerCancel={onSurfacePointerUp}
+        onPointerUp={() => endPan(true)}
+        onPointerCancel={() => endPan(false)}
+        onLostPointerCapture={() => endPan(false)}
         className={cn(
-          "absolute inset-0 touch-none select-none",
+          "absolute inset-0 touch-none outline-none select-none",
           panning ? "cursor-grabbing" : handMode ? "cursor-grab" : "cursor-default",
         )}
         style={{
@@ -360,14 +390,22 @@ export function FlowCanvas({
             </AnimatePresence>
 
             <AnimatePresence>
-              {layout.addButtons.map((button) => (
-                <AddStepButton
-                  key={button.parentId}
-                  button={button}
-                  delay={intro ? 0.4 : 0.08}
-                  onAdd={onAddStep}
-                />
-              ))}
+              {layout.addButtons.map((button) => {
+                const parent = displaySteps.find((s) => s.id === button.parentId);
+                const label =
+                  parent?.kind === "condition"
+                    ? `Add path to “${parent.panel.title}”`
+                    : `Add step after “${parent?.panel.title ?? "this step"}”`;
+                return (
+                  <AddStepButton
+                    key={button.parentId}
+                    button={button}
+                    label={label}
+                    delay={intro ? 0.4 : 0.08}
+                    onAdd={onAddStep}
+                  />
+                );
+              })}
             </AnimatePresence>
 
             {dropPreview && <DropGhost preview={dropPreview} />}

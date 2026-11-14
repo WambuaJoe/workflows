@@ -1,22 +1,32 @@
 import { useCallback, useState } from "react";
 
-type HistoryState<T> = { past: T[]; present: T; future: T[] };
+type HistoryState<T> = { past: T[]; present: T; future: T[]; mergeKey: string | null };
 
 const LIMIT = 100;
 
-/** Undo/redo over an immutable value. `set` takes an updater; returning the same value records nothing. */
+/**
+ * Undo/redo over an immutable value. Updates that return the same value record nothing,
+ * and consecutive updates sharing a `merge` key (typing, nudging) collapse into one step.
+ */
 export function useHistory<T>(initial: T) {
   const [state, setState] = useState<HistoryState<T>>({
     past: [],
     present: initial,
     future: [],
+    mergeKey: null,
   });
 
-  const set = useCallback((update: (prev: T) => T) => {
+  const set = useCallback((update: (prev: T) => T, merge?: string) => {
     setState((s) => {
       const next = update(s.present);
       if (Object.is(next, s.present)) return s;
-      return { past: [...s.past, s.present].slice(-LIMIT), present: next, future: [] };
+      if (merge && merge === s.mergeKey) return { ...s, present: next, future: [] };
+      return {
+        past: [...s.past, s.present].slice(-LIMIT),
+        present: next,
+        future: [],
+        mergeKey: merge ?? null,
+      };
     });
   }, []);
 
@@ -28,6 +38,7 @@ export function useHistory<T>(initial: T) {
             past: s.past.slice(0, -1),
             present: s.past[s.past.length - 1],
             future: [s.present, ...s.future],
+            mergeKey: null,
           },
     );
   }, []);
@@ -36,7 +47,12 @@ export function useHistory<T>(initial: T) {
     setState((s) =>
       s.future.length === 0
         ? s
-        : { past: [...s.past, s.present], present: s.future[0], future: s.future.slice(1) },
+        : {
+            past: [...s.past, s.present],
+            present: s.future[0],
+            future: s.future.slice(1),
+            mergeKey: null,
+          },
     );
   }, []);
 

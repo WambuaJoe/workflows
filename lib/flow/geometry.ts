@@ -16,7 +16,7 @@ const EDGE_START_GAP = 8;
 const EDGE_END_GAP = 33;
 
 /** Connector to an arrow tip: the design's rounded elbow when there's room, otherwise an S-curve. */
-export function routeEdge(sx: number, sy: number, tx: number, ty: number): string {
+function routeEdge(sx: number, sy: number, tx: number, ty: number): string {
   const dx = tx - sx;
   if (Math.abs(dx) < 0.5 && ty > sy) return `M${sx} ${sy}V${ty}`;
   if (ty - sy >= 44) {
@@ -86,12 +86,15 @@ function overlapsAny(steps: Step[], x: number, y: number) {
   );
 }
 
-/** A free spot one row below the parent, stepping right past anything in the way. */
-export function placeBelow(steps: Step[], parentId: string) {
+/**
+ * A free spot one row below the parent, stepping right past anything in the way.
+ * Without a parent, the row below the whole flow.
+ */
+export function placeBelow(steps: Step[], parentId: string | null) {
   const parent = steps.find((s) => s.id === parentId);
-  if (!parent) return { x: FRAME_OFFSET_X, y: 40 };
-  let x = parent.x;
-  const y = parent.y + ROW_GAP;
+  const lowest = Math.max(0, ...steps.map((s) => s.y));
+  let x = parent?.x ?? FRAME_OFFSET_X;
+  const y = (parent?.y ?? lowest) + ROW_GAP;
   for (let i = 0; i < 24 && overlapsAny(steps, x, y); i++) x += COLUMN_GAP;
   return { x, y };
 }

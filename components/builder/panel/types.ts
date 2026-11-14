@@ -7,12 +7,17 @@ import type {
   RoleKey,
   Step,
   StepAction,
+  StepSettings,
 } from "@/lib/flow";
 
 export type StepPanelProps = {
   step: Step;
+  conditionType: string;
+  onConditionTypeChange: (type: string) => void;
   conditions: ConditionRow[];
   onConditionsChange: (rows: ConditionRow[]) => void;
+  onAddConditionRow: () => void;
+  onSettingsChange: (id: string, patch: Partial<StepSettings>) => void;
   /** The condition's paths, in order. */
   paths: PathInfo[];
   onSelectStep: (id: string) => void;

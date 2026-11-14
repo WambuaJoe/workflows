@@ -6,6 +6,7 @@ export const INITIAL_DOC: Doc = {
   name: "Onboarding Process",
   // Generated ids count up from here, clear of the fixed ones below.
   nextId: 3,
+  conditionType: "New step",
   conditions: [{ id: "condition-1", subject: "User selects", attributes: ["Roles"] }],
   steps: [
     {

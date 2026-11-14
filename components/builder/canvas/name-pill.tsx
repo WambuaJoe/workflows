@@ -1,11 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PencilIcon } from "@/components/icons";
 
 /** The rule's name, top-left of the canvas. Click the pencil or double-click to rename. */
 export function NamePill({ name, onRename }: { name: string; onRename: (name: string) => void }) {
   const [draft, setDraft] = useState<string | null>(null);
+  const pencil = useRef<HTMLButtonElement>(null);
+  // Enter and Escape hand focus back to the pencil; clicking away leaves it where it went.
+  const refocus = useRef(false);
+
+  useEffect(() => {
+    if (draft !== null || !refocus.current) return;
+    refocus.current = false;
+    pencil.current?.focus();
+  }, [draft]);
 
   const commit = () => {
     const next = draft?.trim();
@@ -24,6 +33,7 @@ export function NamePill({ name, onRename }: { name: string; onRename: (name: st
             {name}
           </span>
           <button
+            ref={pencil}
             type="button"
             aria-label="Rename automation"
             title="Rename"
@@ -43,8 +53,10 @@ export function NamePill({ name, onRename }: { name: string; onRename: (name: st
           onFocus={(e) => e.currentTarget.select()}
           onBlur={commit}
           onKeyDown={(e) => {
+            if (e.key !== "Enter" && e.key !== "Escape") return;
+            refocus.current = true;
             if (e.key === "Enter") commit();
-            if (e.key === "Escape") setDraft(null);
+            else setDraft(null);
           }}
           className="mr-2 min-w-0 bg-transparent text-[13.5px] font-semibold outline-none"
         />

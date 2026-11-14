@@ -74,6 +74,7 @@ export const StepCard = memo(function StepCard({
   return (
     <div
       data-step
+      data-step-id={step.id}
       className="absolute top-0 left-0"
       style={{
         width: STEP_WIDTH,
@@ -108,12 +109,6 @@ export const StepCard = memo(function StepCard({
               if (e.target !== e.currentTarget) return;
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                onActivate(step.id);
-              }
-            }}
-            onFocus={(e) => {
-              // Keyboard focus selects too, so the panel and arrow-key nudging follow it.
-              if (e.target === e.currentTarget && e.currentTarget.matches(":focus-visible")) {
                 onActivate(step.id);
               }
             }}
@@ -241,7 +236,7 @@ function PathRoleChip({
       <Dropdown
         className="shrink-0"
         menuClassName="w-[188px]"
-        trigger={({ open, toggle, menuId }) => (
+        trigger={({ open, toggle, menuId, triggerId }) => (
           <button
             type="button"
             onClick={() => {
@@ -250,6 +245,7 @@ function PathRoleChip({
             }}
             aria-haspopup="menu"
             aria-expanded={open}
+            id={triggerId}
             aria-controls={open ? menuId : undefined}
             aria-label={`Path for ${step.chip.label}. Change role`}
             title="Choose who this path is for"

@@ -1,8 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { HandIcon, PointerIcon, RedoIcon, SparkleIcon, UndoIcon } from "@/components/icons";
-import { ZoomScanIcon } from "@/components/icons";
+import {
+  HandIcon,
+  PointerIcon,
+  RedoIcon,
+  SparkleIcon,
+  UndoIcon,
+  ZoomScanIcon,
+} from "@/components/icons";
 import { Dropdown, MenuCaret, MenuItem, MenuSeparator } from "@/components/ui/dropdown";
 import { cn } from "@/lib/cn";
 import { BASE_ZOOM } from "./use-canvas-view";
@@ -45,7 +51,7 @@ export function CanvasToolbar({
   return (
     <div
       data-control
-      role="toolbar"
+      role="group"
       aria-label="Canvas tools"
       style={{ left: `calc((100% - ${inset}px) / 2)` }}
       className="absolute bottom-[18px] z-20 flex -translate-x-1/2 items-center gap-2.5 rounded-[16px] border border-line bg-white p-[9px] shadow-float transition-[left] duration-[240ms] ease-drawer motion-reduce:transition-none"
@@ -82,12 +88,13 @@ export function CanvasToolbar({
         side="top"
         align="end"
         menuClassName="w-44"
-        trigger={({ open, toggle, menuId }) => (
+        trigger={({ open, toggle, menuId, triggerId }) => (
           <button
             type="button"
             onClick={toggle}
             aria-haspopup="menu"
             aria-expanded={open}
+            id={triggerId}
             aria-controls={open ? menuId : undefined}
             aria-label={`Zoom ${zoom}%`}
             className="flex h-9 items-center gap-2 rounded-[10px] border border-line bg-white px-2.5 text-[13.5px] font-medium shadow-xs transition-colors duration-150 hover:bg-hover"

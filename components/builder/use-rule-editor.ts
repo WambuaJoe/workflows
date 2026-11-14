@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   INITIAL_DOC,
   addAction,
+  addConditionRow,
   addPath,
   addStep,
   deriveSteps,
@@ -17,12 +18,14 @@ import {
   setAudience,
   setPathRole,
   unusedRole,
+  updateSettings,
   type ActionTemplate,
   type AppKey,
   type ConditionRow,
   type Doc,
   type RoleKey,
   type StepAction,
+  type StepSettings,
 } from "@/lib/flow";
 import { useHistory } from "@/lib/use-history";
 
@@ -30,6 +33,9 @@ const REFUSAL_TIMEOUT_MS = 5000;
 
 /** An edit that was refused. The nonce lets a repeat replay the card's shake. */
 export type RefusedEdit = { stepId: string; nonce: number; title: string; message: string };
+
+/** What deleting did, so the caller can move focus somewhere sensible. */
+export type DeleteResult = { deleted: false } | { deleted: true; parentId: string | null };
 
 /** The rule being edited: document, history, selection and every command the UI runs. */
 export function useRuleEditor() {
@@ -88,10 +94,11 @@ export function useRuleEditor() {
 
   /** Deletes a step, or refuses with a reason when that would break the flow. */
   const deleteStep = useCallback(
-    (id: string) => {
-      const problem = removalProblem(latest.current.doc, id);
+    (id: string): DeleteResult => {
+      const { doc, steps } = latest.current;
+      const problem = removalProblem(doc, id);
       if (problem) {
-        const title = latest.current.steps.find((s) => s.id === id)?.panel.title ?? "this step";
+        const title = steps.find((s) => s.id === id)?.panel.title ?? "this step";
         refusalCount.current += 1;
         setRefused({
           stepId: id,
@@ -99,17 +106,42 @@ export function useRuleEditor() {
           title: `Can't delete “${title}”`,
           message: problem,
         });
-        return;
+        return { deleted: false };
       }
       setRefused(null);
       set((d) => removeStep(d, id));
       setSelectedId((current) => (current === id ? null : current));
+      return { deleted: true, parentId: doc.links.find((l) => l.to === id)?.from ?? null };
     },
     [set],
   );
 
   const moveStepTo = useCallback(
     (id: string, x: number, y: number) => set((d) => moveStep(d, id, x, y)),
+    [set],
+  );
+
+  const nudgeStep = useCallback(
+    (id: string, dx: number, dy: number) =>
+      set((d) => {
+        const step = d.steps.find((s) => s.id === id);
+        return step ? moveStep(d, id, step.x + dx, step.y + dy) : d;
+      }, `nudge:${id}`),
+    [set],
+  );
+
+  const setConditionType = useCallback(
+    (conditionType: string) =>
+      set((d) => (d.conditionType === conditionType ? d : { ...d, conditionType })),
+    [set],
+  );
+
+  const addRow = useCallback(() => set(addConditionRow), [set]);
+
+  /** Notes typing merges into one undo step per step; toggles each get their own. */
+  const changeSettings = useCallback(
+    (id: string, patch: Partial<StepSettings>) =>
+      set((d) => updateSettings(d, id, patch), "notes" in patch ? `notes:${id}` : undefined),
     [set],
   );
 
@@ -171,8 +203,12 @@ export function useRuleEditor() {
     continueFrom,
     deleteStep,
     moveStep: moveStepTo,
+    nudgeStep,
     rename,
     setConditions,
+    setConditionType,
+    addConditionRow: addRow,
+    changeSettings,
     changePathRole,
     changeAudience,
     addActionToSelected,

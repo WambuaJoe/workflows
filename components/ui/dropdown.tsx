@@ -6,7 +6,8 @@ import { CaretDownIcon, CheckIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { EASE_OUT } from "@/lib/motion";
 
-type TriggerProps = { open: boolean; toggle: () => void; menuId: string };
+/** Triggers must set `id={triggerId}`: the menu is named after its trigger. */
+type TriggerProps = { open: boolean; toggle: () => void; menuId: string; triggerId: string };
 
 type DropdownProps = {
   trigger: (props: TriggerProps) => ReactNode;
@@ -39,6 +40,7 @@ export function Dropdown({
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
+  const triggerId = `${menuId}-trigger`;
 
   const close = () => setOpen(false);
 
@@ -63,11 +65,9 @@ export function Dropdown({
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("keydown", onKeyDown);
       // Closing from inside the menu hands focus back to the trigger.
-      if (menu?.contains(document.activeElement)) {
-        root?.querySelector<HTMLElement>("[aria-haspopup]")?.focus();
-      }
+      if (menu?.contains(document.activeElement)) document.getElementById(triggerId)?.focus();
     };
-  }, [open]);
+  }, [open, triggerId]);
 
   const onMenuKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const items = Array.from(menuRef.current?.querySelectorAll<HTMLElement>(ITEM_SELECTOR) ?? []);
@@ -102,13 +102,14 @@ export function Dropdown({
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>
-      {trigger({ open, toggle: () => setOpen((o) => !o), menuId })}
+      {trigger({ open, toggle: () => setOpen((o) => !o), menuId, triggerId })}
       <AnimatePresence>
         {open && (
           <motion.div
             ref={menuRef}
             id={menuId}
             role="menu"
+            aria-labelledby={triggerId}
             onKeyDown={onMenuKeyDown}
             initial={{ opacity: 0, transform: "scale(0.96)" }}
             animate={{ opacity: 1, transform: "scale(1)" }}
@@ -180,15 +181,19 @@ export function MenuSeparator() {
   return <div role="separator" className="-mx-1 my-1 h-px bg-line" />;
 }
 
-/** Small uppercase heading inside a menu. */
-export function MenuLabel({ children }: { children: ReactNode }) {
+/** A labelled section of a menu, with a small uppercase heading. */
+export function MenuGroup({ label, children }: { label: string; children: ReactNode }) {
+  const id = useId();
   return (
-    <p
-      role="presentation"
-      className="px-2.5 pt-1.5 pb-1 text-[10.5px] tracking-[0.06em] text-subtle uppercase"
-    >
+    <div role="group" aria-labelledby={id}>
+      <div
+        id={id}
+        className="px-2.5 pt-1.5 pb-1 text-[10.5px] tracking-[0.06em] text-subtle uppercase"
+      >
+        {label}
+      </div>
       {children}
-    </p>
+    </div>
   );
 }
 
