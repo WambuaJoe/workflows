@@ -2,8 +2,6 @@ import { INITIAL_DOC, type Doc } from "@/lib/flow";
 import { getDatabase } from "@/lib/server/db";
 import { validateWorkflowDefinition } from "@/lib/server/workflow-validation";
 
-export const runtime = "nodejs";
-
 const DEMO_WORKFLOW_ID = "00000000-0000-4000-8000-000000000001";
 
 function success<T>(data: T, status = 200) {
@@ -65,7 +63,12 @@ export async function PUT(request: Request) {
   const definition = body.definition;
   const validationErrors = validateWorkflowDefinition(definition);
   if (validationErrors.length) {
-    return failure("validation_failed", "Fix the workflow validation errors before saving.", 422, validationErrors);
+    return failure(
+      "validation_failed",
+      "Fix the workflow validation errors before saving.",
+      422,
+      validationErrors,
+    );
   }
 
   const doc = definition as Doc;
