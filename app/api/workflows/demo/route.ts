@@ -53,7 +53,11 @@ export async function GET() {
 export async function PUT(request: Request) {
   let body: { definition?: unknown; createVersion?: boolean };
   try {
-    body = await request.json();
+    const parsed: unknown = await request.json();
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return failure("invalid_json", "Request body must be a JSON object.", 400);
+    }
+    body = parsed as { definition?: unknown; createVersion?: boolean };
   } catch {
     return failure("invalid_json", "Request body must contain valid JSON.", 400);
   }
@@ -65,9 +69,9 @@ export async function PUT(request: Request) {
   }
 
   const doc = definition as Doc;
-  const sql = getDatabase();
 
   try {
+    const sql = getDatabase();
     const result = await sql.begin(async (tx) => {
       const existing = await tx`
         SELECT id FROM workflows WHERE id = ${DEMO_WORKFLOW_ID} FOR UPDATE
