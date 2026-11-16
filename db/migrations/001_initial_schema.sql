@@ -1,7 +1,6 @@
 -- Workflows application database (separate database from n8n's internal database).
 -- Apply with psql to the dedicated Workflows database.
-
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- PostgreSQL 13+ provides gen_random_uuid() without an extension.
 
 CREATE TABLE IF NOT EXISTS workflows (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
