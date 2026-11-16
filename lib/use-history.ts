@@ -1,13 +1,9 @@
 import { useCallback, useState } from "react";
 
 type HistoryState<T> = { past: T[]; present: T; future: T[]; mergeKey: string | null };
-
 const LIMIT = 100;
 
-/**
- * Undo/redo over an immutable value. Updates that return the same value record nothing,
- * and consecutive updates sharing a `merge` key (typing, nudging) collapse into one step.
- */
+/** Undo/redo over an immutable value, with adjacent edits optionally merged. */
 export function useHistory<T>(initial: T) {
   const [state, setState] = useState<HistoryState<T>>({
     past: [],
@@ -28,6 +24,10 @@ export function useHistory<T>(initial: T) {
         mergeKey: merge ?? null,
       };
     });
+  }, []);
+
+  const replace = useCallback((value: T) => {
+    setState({ past: [], present: value, future: [], mergeKey: null });
   }, []);
 
   const undo = useCallback(() => {
@@ -59,6 +59,7 @@ export function useHistory<T>(initial: T) {
   return {
     present: state.present,
     set,
+    replace,
     undo,
     redo,
     canUndo: state.past.length > 0,
