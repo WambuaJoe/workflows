@@ -35,7 +35,7 @@ ALTER TABLE workflows
 
 CREATE TABLE IF NOT EXISTS executions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  workflow_id uuid NOT NULL REFERENCES workflows(id) ON DELETE CASCADE,
+  workflow_id uuid REFERENCES workflows(id) ON DELETE SET NULL,
   workflow_version_id uuid REFERENCES workflow_versions(id) ON DELETE SET NULL,
   execution_mode text NOT NULL CHECK (execution_mode IN ('test', 'production')),
   status text NOT NULL DEFAULT 'queued'
