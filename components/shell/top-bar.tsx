@@ -22,7 +22,7 @@ const swap = {
 
 type TopBarProps = {
   name: string;
-  status: "Loading" | "Draft" | "Saving" | "Saved" | "Error";
+  status: "Draft" | "Saved";
   onSave: () => void;
 };
 
@@ -63,11 +63,7 @@ export function TopBar({ name, status, onSave }: TopBarProps) {
           aria-live="polite"
           className={cn(
             "relative inline-grid h-[21px] shrink-0 place-items-center overflow-hidden rounded-[6px] px-2 text-[11.5px] transition-colors duration-200 ease-out",
-            status === "Saved"
-              ? "bg-success-soft text-success"
-              : status === "Error"
-                ? "bg-alert/10 text-alert"
-                : "bg-tint text-muted",
+            status === "Saved" ? "bg-success-soft text-success" : "bg-tint text-muted",
           )}
         >
           <AnimatePresence mode="popLayout" initial={false}>
