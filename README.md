@@ -26,6 +26,16 @@ npm run dev
 
 Then open [http://localhost:3000](http://localhost:3000).
 
+## Database setup
+
+Workflow drafts and versions use a dedicated PostgreSQL database, separate from n8n's internal database.
+
+1. Copy `.env.example` to `.env.local` and set `DATABASE_URL` to a login that inherits the `workflows_app` role.
+2. Apply migrations 001 and 002, run the integration permission test, then apply migration 003 as described in [the PostgreSQL integration contract](docs/postgres-integration-contract.md).
+3. Restart the development server.
+
+The database-backed API is currently a single-user prototype without application authentication. Do not expose it publicly until an access gate is configured.
+
 ## Scripts
 
 | Command                | What it does                      |
