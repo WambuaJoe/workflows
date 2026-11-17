@@ -47,6 +47,7 @@ export function useRuleEditor() {
     "loading" | "ready" | "saving" | "publishing" | "error"
   >("loading");
   const workflowId = useRef<string | null>(null);
+  const [currentWorkflowId, setCurrentWorkflowId] = useState<string | null>(null);
   const hydrationStarted = useRef(false);
   const [selectedId, setSelectedId] = useState<string | null>("condition");
   const [refused, setRefused] = useState<RefusedEdit | null>(null);
@@ -99,6 +100,7 @@ export function useRuleEditor() {
         if (!remote) throw new Error("Could not load the saved workflow.");
         window.localStorage.setItem(storageKey, remote.id);
         workflowId.current = remote.id;
+        setCurrentWorkflowId(remote.id);
         reset(remote.doc);
         setSavedDoc(remote.doc);
         setPublishedDoc(remote.publishedDoc ?? null);
@@ -302,7 +304,7 @@ export function useRuleEditor() {
   const dismissRefusal = useCallback(() => setRefused(null), []);
 
   return {
-    workflowId: workflowId.current,
+    workflowId: currentWorkflowId,
     doc,
     steps,
     paths,
