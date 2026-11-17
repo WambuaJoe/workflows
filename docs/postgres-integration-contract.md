@@ -83,8 +83,8 @@ The permission test is run before migration 003 because it deliberately cleans u
 
 ## Scope
 
-Prototype essentials: initial schema, integration schema/views/functions, separate least-privilege roles, permission smoke test, then Next.js/n8n wiring.
+Prototype essentials: initial schema, integration schema/views/functions, separate least-privilege roles, permission smoke test, Next.js execution-record APIs, then n8n translation/dispatch and status polling.
 
 Deferred: concrete business-data views until a source is identified, automated compatibility testing, contract deprecation tooling, advanced reconciliation/monitoring, and scheduled 30-day retention cleanup.
 
-The current schema is a single-user prototype. Multi-user row isolation is not included in this milestone.
+The current schema is a single-user prototype. Multi-user row isolation is not included in this milestone. The Next.js execution API currently creates, reads and cancels database records; queued executions are not dispatched to n8n until the adapter and translator are implemented.
