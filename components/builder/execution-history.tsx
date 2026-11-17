@@ -143,15 +143,28 @@ export function ExecutionHistory({
       setLastUpdated(new Date());
 
       if (expandedExecution) {
-        const detailResponse = await fetch("/api/executions/" + expandedExecution, {
-          cache: "no-store",
-          signal: request.signal,
-        });
-        const detailPayload = await detailResponse.json();
-        if (!detailResponse.ok || !detailPayload?.ok) {
-          throw new Error(detailPayload?.error?.message ?? "Could not refresh execution details.");
+        setDetailLoading((current) => ({ ...current, [expandedExecution]: true }));
+        try {
+          const detailResponse = await fetch("/api/executions/" + expandedExecution, {
+            cache: "no-store",
+            signal: request.signal,
+          });
+          const detailPayload = await detailResponse.json();
+          if (!detailResponse.ok || !detailPayload?.ok) {
+            throw new Error(detailPayload?.error?.message ?? "Could not refresh execution details.");
+          }
+          setDetails((current) => ({ ...current, [expandedExecution]: detailPayload.data }));
+          setDetailErrors((current) => ({ ...current, [expandedExecution]: "" }));
+        } catch (cause) {
+          if (!request.signal.aborted) {
+            setDetailErrors((current) => ({
+              ...current,
+              [expandedExecution]: cause instanceof Error ? cause.message : "Could not refresh execution details.",
+            }));
+          }
+        } finally {
+          setDetailLoading((current) => ({ ...current, [expandedExecution]: false }));
         }
-        setDetails((current) => ({ ...current, [expandedExecution]: detailPayload.data }));
       }
     } catch (cause) {
       if (!request.signal.aborted) {
@@ -204,7 +217,6 @@ export function ExecutionHistory({
       return;
     }
     setExpandedExecution(id);
-    if (!details[id]) void loadExecutionDetail(id);
   };
 
   if (!open) return null;
