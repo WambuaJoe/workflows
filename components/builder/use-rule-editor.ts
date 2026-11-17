@@ -44,6 +44,7 @@ export function useRuleEditor() {
   const [savedDoc, setSavedDoc] = useState<Doc | null>(null);
   const [persistenceState, setPersistenceState] = useState<"loading" | "ready" | "saving" | "error">("loading");
   const workflowId = useRef<string | null>(null);
+  const hydrationStarted = useRef(false);
   const [selectedId, setSelectedId] = useState<string | null>("condition");
   const [refused, setRefused] = useState<RefusedEdit | null>(null);
   const refusalCount = useRef(0);
@@ -61,6 +62,8 @@ export function useRuleEditor() {
 
   // Load the user's current workflow, creating the initial example on first use.
   useEffect(() => {
+    if (hydrationStarted.current) return;
+    hydrationStarted.current = true;
     let cancelled = false;
 
     const hydrate = async () => {
