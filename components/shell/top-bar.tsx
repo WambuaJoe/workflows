@@ -22,7 +22,7 @@ const swap = {
 
 type TopBarProps = {
   name: string;
-  status: "Draft" | "Saved";
+  status: "Loading" | "Draft" | "Saving" | "Saved" | "Error";
   onSave: () => void;
 };
 
@@ -63,7 +63,11 @@ export function TopBar({ name, status, onSave }: TopBarProps) {
           aria-live="polite"
           className={cn(
             "relative inline-grid h-[21px] shrink-0 place-items-center overflow-hidden rounded-[6px] px-2 text-[11.5px] transition-colors duration-200 ease-out",
-            status === "Saved" ? "bg-success-soft text-success" : "bg-tint text-muted",
+            status === "Saved"
+              ? "bg-success-soft text-success"
+              : status === "Error"
+                ? "bg-alert-soft text-alert"
+                : "bg-tint text-muted",
           )}
         >
           <AnimatePresence mode="popLayout" initial={false}>
@@ -138,7 +142,8 @@ export function TopBar({ name, status, onSave }: TopBarProps) {
         <button
           type="button"
           onClick={onSave}
-          className="h-[38px] rounded-[10px] bg-gradient-to-b from-[#256a81] to-brand px-4 text-[14px] font-medium text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(16_50_62/0.3)] transition-[filter,transform] duration-150 ease-out hover:brightness-110 motion-safe:active:scale-[0.97]"
+          disabled={status === "Loading" || status === "Saving"}
+          className="h-[38px] rounded-[10px] bg-gradient-to-b from-[#256a81] to-brand px-4 text-[14px] font-medium text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(16_50_62/0.3)] transition-[filter,transform] duration-150 ease-out hover:brightness-110 motion-safe:active:scale-[0.97] disabled:cursor-wait disabled:opacity-60"
         >
           Save Rule
         </button>
