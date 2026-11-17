@@ -30,9 +30,11 @@ import {
 import { useHistory } from "@/lib/use-history";
 
 const REFUSAL_TIMEOUT_MS = 5000;
-type SaveStatus = "Loading" | "Draft" | "Saving" | "Saved" | "Error";
 
+/** An edit that was refused. The nonce lets a repeat replay the card's shake. */
 export type RefusedEdit = { stepId: string; nonce: number; title: string; message: string };
+
+/** What deleting did, so the caller can move focus somewhere sensible. */
 export type DeleteResult = { deleted: false } | { deleted: true; parentId: string | null };
 
 /** The rule being edited: document, history, selection and every command the UI runs. */
@@ -40,82 +42,20 @@ export function useRuleEditor() {
   const history = useHistory<Doc>(INITIAL_DOC);
   const { present: doc, set } = history;
   const [savedDoc, setSavedDoc] = useState<Doc | null>(null);
-  const [loaded, setLoaded] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>("Loading");
   const [selectedId, setSelectedId] = useState<string | null>("condition");
   const [refused, setRefused] = useState<RefusedEdit | null>(null);
   const refusalCount = useRef(0);
-  const saveQueue = useRef<Promise<void>>(Promise.resolve());
 
   const steps = useMemo(() => deriveSteps(doc), [doc]);
   const paths = useMemo(() => pathsOf(steps), [steps]);
   const pathRoles = useMemo(() => paths.map((p) => p.role), [paths]);
+  // Undo can remove the selected step; the selection then resolves to nothing.
   const selected = steps.find((s) => s.id === selectedId) ?? null;
 
   const latest = useRef({ doc, steps, selectedId });
   useEffect(() => {
     latest.current = { doc, steps, selectedId };
   });
-
-  useEffect(() => {
-    const controller = new AbortController();
-    void (async () => {
-      try {
-        const response = await fetch("/api/workflows/demo", { signal: controller.signal });
-        const payload = await response.json();
-        if (!response.ok || !payload.ok) {
-          throw new Error(payload.error?.message ?? "Unable to load the saved workflow.");
-        }
-        const definition = payload.data.workflow.definition as Doc;
-        history.replace(definition);
-        setSavedDoc(definition);
-        setSaveStatus("Saved");
-      } catch {
-        if (!controller.signal.aborted) setSaveStatus("Error");
-      } finally {
-        if (!controller.signal.aborted) setLoaded(true);
-      }
-    })();
-    return () => controller.abort();
-  }, [history.replace]);
-
-  const persist = useCallback((snapshot: Doc, createVersion: boolean) => {
-    const task = saveQueue.current
-      .catch(() => undefined)
-      .then(async () => {
-        setSaveStatus("Saving");
-        const response = await fetch("/api/workflows/demo", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ definition: snapshot, createVersion }),
-        });
-        const payload = await response.json();
-        if (!response.ok || !payload.ok) {
-          const details = payload.error?.details as { message?: string }[] | undefined;
-          throw new Error(
-            details?.[0]?.message ?? payload.error?.message ?? "The workflow could not be saved.",
-          );
-        }
-        if (latest.current.doc === snapshot) {
-          setSavedDoc(snapshot);
-          setSaveStatus("Saved");
-        }
-      });
-    saveQueue.current = task;
-    return task.catch((error: unknown) => {
-      setSaveStatus("Error");
-      throw error;
-    });
-  }, []);
-
-  // Auto-save edits to the mutable draft. Manual Save additionally creates a version snapshot.
-  useEffect(() => {
-    if (!loaded || savedDoc === doc) return;
-    const timer = window.setTimeout(() => {
-      void persist(doc, false).catch(() => undefined);
-    }, 700);
-    return () => window.clearTimeout(timer);
-  }, [doc, loaded, persist, savedDoc]);
 
   useEffect(() => {
     if (!refused) return;
@@ -142,6 +82,7 @@ export function useRuleEditor() {
     [set],
   );
 
+  /** The "+" under a condition adds a path; anywhere else it adds a step. */
   const continueFrom = useCallback(
     (parentId: string) => {
       const parent = latest.current.steps.find((s) => s.id === parentId);
@@ -151,6 +92,7 @@ export function useRuleEditor() {
     [addPathTo, addStepAfter],
   );
 
+  /** Deletes a step, or refuses with a reason when that would break the flow. */
   const deleteStep = useCallback(
     (id: string): DeleteResult => {
       const { doc, steps } = latest.current;
@@ -193,28 +135,36 @@ export function useRuleEditor() {
       set((d) => (d.conditionType === conditionType ? d : { ...d, conditionType })),
     [set],
   );
+
   const addRow = useCallback(() => set(addConditionRow), [set]);
+
+  /** Notes typing merges into one undo step per step; toggles each get their own. */
   const changeSettings = useCallback(
     (id: string, patch: Partial<StepSettings>) =>
       set((d) => updateSettings(d, id, patch), "notes" in patch ? `notes:${id}` : undefined),
     [set],
   );
+
   const rename = useCallback(
     (name: string) => set((d) => (d.name === name ? d : { ...d, name })),
     [set],
   );
+
   const setConditions = useCallback(
     (conditions: ConditionRow[]) => set((d) => ({ ...d, conditions })),
     [set],
   );
+
   const changePathRole = useCallback(
     (id: string, role: RoleKey) => set((d) => setPathRole(d, id, role)),
     [set],
   );
+
   const changeAudience = useCallback(
     (id: string, roles: RoleKey[]) => set((d) => setAudience(d, id, roles)),
     [set],
   );
+
   const addActionToSelected = useCallback(
     (template: ActionTemplate) => {
       const id = latest.current.selectedId;
@@ -222,6 +172,7 @@ export function useRuleEditor() {
     },
     [set],
   );
+
   const setSelectedActions = useCallback(
     (actions: StepAction[]) => {
       const id = latest.current.selectedId;
@@ -230,14 +181,8 @@ export function useRuleEditor() {
     [set],
   );
 
-  const save = useCallback(() => persist(latest.current.doc, true), [persist]);
+  const save = useCallback(() => setSavedDoc(latest.current.doc), []);
   const dismissRefusal = useCallback(() => setRefused(null), []);
-  const status: SaveStatus =
-    saveStatus === "Error" || saveStatus === "Loading" || saveStatus === "Saving"
-      ? saveStatus
-      : savedDoc === doc
-        ? "Saved"
-        : "Draft";
 
   return {
     doc,
@@ -245,7 +190,7 @@ export function useRuleEditor() {
     paths,
     pathRoles,
     selected,
-    status,
+    status: savedDoc === doc ? ("Saved" as const) : ("Draft" as const),
     canAddPath: unusedRole(doc) !== null,
     refused,
     canUndo: history.canUndo,

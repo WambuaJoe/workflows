@@ -629,13 +629,13 @@ Each app has:
 
 Apps:
 
-| Key         | Name      | Created action            |
-| ----------- | --------- | ------------------------- |
-| `slack`     | Slack     | Send Slack message        |
-| `asana`     | Asana     | Create Asana task         |
+| Key | Name | Created action |
+| --- | --- | --- |
+| `slack` | Slack | Send Slack message |
+| `asana` | Asana | Create Asana task |
 | `mailchimp` | Mailchimp | Add to Mailchimp audience |
-| `zapier`    | Zapier    | Trigger a Zap             |
-| `spotify`   | Spotify   | Share welcome playlist    |
+| `zapier` | Zapier | Trigger a Zap |
+| `spotify` | Spotify | Share welcome playlist |
 
 Icons use the public Dashboard Icons CDN:
 
@@ -669,14 +669,14 @@ Defines:
 
 Role keys and behavior:
 
-| Role        | Meaning         | Example path content    |
-| ----------- | --------------- | ----------------------- |
-| `founder`   | Founder         | Show business dashboard |
-| `designer`  | Designer        | Show design workspace   |
-| `developer` | Developer       | Show API quickstart     |
-| `marketer`  | Marketer        | Show campaign planner   |
-| `product`   | Product manager | Show roadmap board      |
-| `else`      | Anyone else     | Show getting started    |
+| Role | Meaning | Example path content |
+| --- | --- | --- |
+| `founder` | Founder | Show business dashboard |
+| `designer` | Designer | Show design workspace |
+| `developer` | Developer | Show API quickstart |
+| `marketer` | Marketer | Show campaign planner |
+| `product` | Product manager | Show roadmap board |
+| `else` | Anyone else | Show getting started |
 
 Default settings:
 
@@ -1584,66 +1584,66 @@ Committed npm dependency lockfile. Prefer `npm ci` for reproducible setup.
 
 The following inventory is intended to ensure no tracked project area is overlooked.
 
-| File                                            | Role                                                                                   |
-| ----------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `.gitignore`                                    | Ignore rules for generated files and dependencies                                      |
-| `.prettierignore`                               | Prettier exclusions                                                                    |
-| `.prettierrc.json`                              | Formatting configuration                                                               |
-| `AGENTS.md`                                     | Next.js-specific agent guidance                                                        |
-| `LICENSE`                                       | MIT license                                                                            |
-| `README.md`                                     | Product overview, setup, shortcuts, status, and project structure                      |
-| `app/favicon.ico`                               | Favicon                                                                                |
-| `app/globals.css`                               | Tailwind import, theme tokens, base styles, custom scrollbar and interaction utilities |
-| `app/layout.tsx`                                | Root document layout, Figtree font, metadata                                           |
-| `app/page.tsx`                                  | Root page rendering `AutomationBuilder`                                                |
-| `components/automation-builder.tsx`             | Main application composition and callback wiring                                       |
-| `components/builder/app-drag-chip.tsx`          | Floating visual for app drag                                                           |
-| `components/builder/canvas/add-step-button.tsx` | Terminal-step continuation button                                                      |
-| `components/builder/canvas/canvas-toolbar.tsx`  | Select/hand/Ask AI/undo/redo/zoom controls                                             |
-| `components/builder/canvas/connectors.tsx`      | SVG edge rendering                                                                     |
-| `components/builder/canvas/drop-ghost.tsx`      | Dragged application drop preview                                                       |
-| `components/builder/canvas/flow-canvas.tsx`     | Main interactive workflow canvas                                                       |
-| `components/builder/canvas/name-pill.tsx`       | Canvas automation title/rename UI                                                      |
-| `components/builder/canvas/step-card.tsx`       | Workflow node card rendering and interaction                                           |
-| `components/builder/canvas/use-canvas-view.ts`  | Pan, zoom, framing, reveal, world coordinates                                          |
-| `components/builder/error-toast.tsx`            | Refused edit/deletion feedback                                                         |
-| `components/builder/focus.ts`                   | Keyboard focus helpers                                                                 |
-| `components/builder/panel/actions-section.tsx`  | Ordered action list UI                                                                 |
-| `components/builder/panel/condition-fields.tsx` | Condition row UI                                                                       |
-| `components/builder/panel/fields.tsx`           | Shared panel field helpers                                                             |
-| `components/builder/panel/link-apps.tsx`        | Searchable app list and app drag/click actions                                         |
-| `components/builder/panel/paths-list.tsx`       | Path list and path management UI                                                       |
-| `components/builder/panel/properties-panel.tsx` | Animated panel shell and tabs                                                          |
-| `components/builder/panel/properties-tab.tsx`   | Property-section composition                                                           |
-| `components/builder/panel/role-field.tsx`       | Role selection UI                                                                      |
-| `components/builder/panel/settings-tab.tsx`     | Settings and notes UI                                                                  |
-| `components/builder/panel/types.ts`             | Panel-local types                                                                      |
-| `components/builder/panel/use-reorderable.ts`   | Reorderable list hook                                                                  |
-| `components/builder/step-parts.tsx`             | Shared step visual fragments                                                           |
-| `components/builder/use-app-drag.ts`            | Pointer-based app dragging and drop target detection                                   |
-| `components/builder/use-rule-editor.ts`         | Document command/state layer                                                           |
-| `components/icons/glyphs.tsx`                   | Original project glyphs                                                                |
-| `components/icons/index.tsx`                    | Icon exports/wrappers                                                                  |
-| `components/shell/sidebar.tsx`                  | Left navigation and project shell                                                      |
-| `components/shell/top-bar.tsx`                  | Breadcrumbs, status, share, save, collaborators shell                                  |
-| `components/ui/dropdown.tsx`                    | Reusable accessible dropdown                                                           |
-| `docs/preview.jpg`                              | Product preview image                                                                  |
-| `eslint.config.mjs`                             | ESLint flat config for Next core web vitals and TypeScript                             |
-| `lib/cn.ts`                                     | Class-name merge helper                                                                |
-| `lib/flow/apps.ts`                              | App catalog and app metadata                                                           |
-| `lib/flow/catalog.ts`                           | Roles, conditions, settings, action templates                                          |
-| `lib/flow/derive.ts`                            | Derived display data for conditions and paths                                          |
-| `lib/flow/edits.ts`                             | Immutable flow mutations and deletion safeguards                                       |
-| `lib/flow/geometry.ts`                          | Canvas geometry, routing, placement, bounds                                            |
-| `lib/flow/index.ts`                             | Flow barrel exports                                                                    |
-| `lib/flow/initial-doc.ts`                       | Default onboarding workflow                                                            |
-| `lib/flow/types.ts`                             | Core domain types                                                                      |
-| `lib/motion.ts`                                 | Shared animation easing constants                                                      |
-| `lib/use-history.ts`                            | Generic undo/redo hook                                                                 |
-| `next.config.ts`                                | Next.js/Turbopack configuration                                                        |
-| `package-lock.json`                             | Locked npm dependency graph                                                            |
-| `package.json`                                  | Project metadata, scripts, dependencies                                                |
-| `tsconfig.json`                                 | Strict TypeScript and path alias configuration                                         |
+| File | Role |
+| --- | --- |
+| `.gitignore` | Ignore rules for generated files and dependencies |
+| `.prettierignore` | Prettier exclusions |
+| `.prettierrc.json` | Formatting configuration |
+| `AGENTS.md` | Next.js-specific agent guidance |
+| `LICENSE` | MIT license |
+| `README.md` | Product overview, setup, shortcuts, status, and project structure |
+| `app/favicon.ico` | Favicon |
+| `app/globals.css` | Tailwind import, theme tokens, base styles, custom scrollbar and interaction utilities |
+| `app/layout.tsx` | Root document layout, Figtree font, metadata |
+| `app/page.tsx` | Root page rendering `AutomationBuilder` |
+| `components/automation-builder.tsx` | Main application composition and callback wiring |
+| `components/builder/app-drag-chip.tsx` | Floating visual for app drag |
+| `components/builder/canvas/add-step-button.tsx` | Terminal-step continuation button |
+| `components/builder/canvas/canvas-toolbar.tsx` | Select/hand/Ask AI/undo/redo/zoom controls |
+| `components/builder/canvas/connectors.tsx` | SVG edge rendering |
+| `components/builder/canvas/drop-ghost.tsx` | Dragged application drop preview |
+| `components/builder/canvas/flow-canvas.tsx` | Main interactive workflow canvas |
+| `components/builder/canvas/name-pill.tsx` | Canvas automation title/rename UI |
+| `components/builder/canvas/step-card.tsx` | Workflow node card rendering and interaction |
+| `components/builder/canvas/use-canvas-view.ts` | Pan, zoom, framing, reveal, world coordinates |
+| `components/builder/error-toast.tsx` | Refused edit/deletion feedback |
+| `components/builder/focus.ts` | Keyboard focus helpers |
+| `components/builder/panel/actions-section.tsx` | Ordered action list UI |
+| `components/builder/panel/condition-fields.tsx` | Condition row UI |
+| `components/builder/panel/fields.tsx` | Shared panel field helpers |
+| `components/builder/panel/link-apps.tsx` | Searchable app list and app drag/click actions |
+| `components/builder/panel/paths-list.tsx` | Path list and path management UI |
+| `components/builder/panel/properties-panel.tsx` | Animated panel shell and tabs |
+| `components/builder/panel/properties-tab.tsx` | Property-section composition |
+| `components/builder/panel/role-field.tsx` | Role selection UI |
+| `components/builder/panel/settings-tab.tsx` | Settings and notes UI |
+| `components/builder/panel/types.ts` | Panel-local types |
+| `components/builder/panel/use-reorderable.ts` | Reorderable list hook |
+| `components/builder/step-parts.tsx` | Shared step visual fragments |
+| `components/builder/use-app-drag.ts` | Pointer-based app dragging and drop target detection |
+| `components/builder/use-rule-editor.ts` | Document command/state layer |
+| `components/icons/glyphs.tsx` | Original project glyphs |
+| `components/icons/index.tsx` | Icon exports/wrappers |
+| `components/shell/sidebar.tsx` | Left navigation and project shell |
+| `components/shell/top-bar.tsx` | Breadcrumbs, status, share, save, collaborators shell |
+| `components/ui/dropdown.tsx` | Reusable accessible dropdown |
+| `docs/preview.jpg` | Product preview image |
+| `eslint.config.mjs` | ESLint flat config for Next core web vitals and TypeScript |
+| `lib/cn.ts` | Class-name merge helper |
+| `lib/flow/apps.ts` | App catalog and app metadata |
+| `lib/flow/catalog.ts` | Roles, conditions, settings, action templates |
+| `lib/flow/derive.ts` | Derived display data for conditions and paths |
+| `lib/flow/edits.ts` | Immutable flow mutations and deletion safeguards |
+| `lib/flow/geometry.ts` | Canvas geometry, routing, placement, bounds |
+| `lib/flow/index.ts` | Flow barrel exports |
+| `lib/flow/initial-doc.ts` | Default onboarding workflow |
+| `lib/flow/types.ts` | Core domain types |
+| `lib/motion.ts` | Shared animation easing constants |
+| `lib/use-history.ts` | Generic undo/redo hook |
+| `next.config.ts` | Next.js/Turbopack configuration |
+| `package-lock.json` | Locked npm dependency graph |
+| `package.json` | Project metadata, scripts, dependencies |
+| `tsconfig.json` | Strict TypeScript and path alias configuration |
 
 ---
 
