@@ -29,6 +29,11 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Check formatting, lint and TypeScript
+        run: |
+          npm run format:check
+          npm run lint
+          npx tsc --noEmit
       - name: Apply database migrations
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/001_initial_schema.sql
