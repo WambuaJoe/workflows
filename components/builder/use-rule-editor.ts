@@ -302,6 +302,7 @@ export function useRuleEditor() {
   const dismissRefusal = useCallback(() => setRefused(null), []);
 
   return {
+    workflowId: workflowId.current,
     doc,
     steps,
     paths,
