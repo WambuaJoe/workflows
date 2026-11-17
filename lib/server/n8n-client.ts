@@ -53,7 +53,8 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     console.error("n8n API request failed", { path, status: response.status, detail: detail.slice(0, 500) });
     throw new Error(`n8n API request failed with status ${response.status}.`);
   }
-  return response.json() as Promise<T>;
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 export async function createAndActivateWorkflow(workflow: N8nWorkflowPayload) {
