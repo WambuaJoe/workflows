@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { BellIcon, CheckIcon } from "@phosphor-icons/react";
+import { BellIcon, CheckIcon, ClockCounterClockwiseIcon } from "@phosphor-icons/react";
 import { InviteIcon, ShareIcon } from "@/components/icons";
 import { cn } from "@/lib/cn";
 import { EASE_OUT } from "@/lib/motion";
@@ -25,9 +25,10 @@ type TopBarProps = {
   status: "Loading" | "Draft" | "Saving" | "Publishing" | "Saved" | "Published" | "Error";
   onSave: () => void;
   onPublish: () => void;
+  onExecutionHistory: () => void;
 };
 
-export function TopBar({ name, status, onSave, onPublish }: TopBarProps) {
+export function TopBar({ name, status, onSave, onPublish, onExecutionHistory }: TopBarProps) {
   const [copied, setCopied] = useState(false);
   const [unread, setUnread] = useState(true);
 
@@ -80,6 +81,16 @@ export function TopBar({ name, status, onSave, onPublish }: TopBarProps) {
       </nav>
 
       <div className="flex shrink-0 items-center gap-3">
+        <button
+          type="button"
+          onClick={onExecutionHistory}
+          disabled={status === "Loading"}
+          className="flex h-9 items-center gap-2 rounded-[10px] border border-line bg-white px-3 text-[13px] font-medium text-ink-soft shadow-xs transition-colors hover:bg-hover disabled:cursor-wait disabled:opacity-50"
+        >
+          <ClockCounterClockwiseIcon size={16} />
+          <span className="hidden xl:inline">Execution History</span>
+          <span className="xl:hidden">History</span>
+        </button>
         <ul className="hidden -space-x-1 sm:flex" aria-label="People editing">
           {COLLABORATORS.map((person) => (
             <li
@@ -136,7 +147,6 @@ export function TopBar({ name, status, onSave, onPublish }: TopBarProps) {
             </motion.span>
           </AnimatePresence>
         </button>
-        {/* Outside the swapping label, so screen readers hear the change. */}
         <span className="sr-only" aria-live="polite">
           {copied ? "Link copied" : ""}
         </span>
