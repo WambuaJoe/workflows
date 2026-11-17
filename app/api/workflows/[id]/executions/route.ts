@@ -67,7 +67,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         LEFT JOIN public.workflow_versions AS v
           ON v.id = w.published_version_id AND v.workflow_id = w.id
         WHERE w.id = ${id}::uuid
-        FOR SHARE
+        FOR SHARE OF w
       `;
 
       if (!workflow) return { kind: "missing" as const };
