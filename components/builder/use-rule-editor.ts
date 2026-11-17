@@ -42,8 +42,9 @@ export function useRuleEditor() {
   const history = useHistory<Doc>(INITIAL_DOC);
   const { present: doc, set, reset } = history;
   const [savedDoc, setSavedDoc] = useState<Doc | null>(null);
+  const [publishedDoc, setPublishedDoc] = useState<Doc | null>(null);
   const [persistenceState, setPersistenceState] = useState<
-    "loading" | "ready" | "saving" | "error"
+    "loading" | "ready" | "saving" | "publishing" | "error"
   >("loading");
   const workflowId = useRef<string | null>(null);
   const hydrationStarted = useRef(false);
@@ -69,7 +70,7 @@ export function useRuleEditor() {
     const hydrate = async () => {
       try {
         const storageKey = "workflows.currentWorkflowId";
-        let remote: { id: string; doc: Doc } | null = null;
+        let remote: { id: string; doc: Doc; publishedDoc?: Doc | null } | null = null;
         const storedId = window.localStorage.getItem(storageKey);
 
         if (storedId) {
@@ -100,6 +101,7 @@ export function useRuleEditor() {
         workflowId.current = remote.id;
         reset(remote.doc);
         setSavedDoc(remote.doc);
+        setPublishedDoc(remote.publishedDoc ?? null);
         setPersistenceState("ready");
       } catch (error) {
         console.error("Workflow hydration failed:", error);
@@ -236,7 +238,12 @@ export function useRuleEditor() {
 
   const save = useCallback(async () => {
     const id = workflowId.current;
-    if (!id || persistenceState === "loading" || persistenceState === "saving") return;
+    if (
+      !id ||
+      persistenceState === "loading" ||
+      persistenceState === "saving" ||
+      persistenceState === "publishing"
+    ) return;
 
     const snapshot = latest.current.doc;
     setPersistenceState("saving");
@@ -258,6 +265,38 @@ export function useRuleEditor() {
       setPersistenceState("error");
     }
   }, [persistenceState]);
+
+  const publish = useCallback(async () => {
+    const id = workflowId.current;
+    if (
+      !id ||
+      persistenceState === "loading" ||
+      persistenceState === "saving" ||
+      persistenceState === "publishing"
+    ) return;
+
+    const snapshot = latest.current.doc;
+    setPersistenceState("publishing");
+    try {
+      const response = await fetch(`/api/workflows/${id}/publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doc: snapshot }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        const message = payload?.error?.message ?? "Could not publish the workflow.";
+        throw new Error(message);
+      }
+      setSavedDoc(snapshot);
+      setPublishedDoc(snapshot);
+      setPersistenceState("ready");
+    } catch (error) {
+      console.error("Workflow publish failed:", error);
+      setPersistenceState("error");
+    }
+  }, [persistenceState]);
+
   const dismissRefusal = useCallback(() => setRefused(null), []);
 
   return {
@@ -271,11 +310,15 @@ export function useRuleEditor() {
         ? ("Loading" as const)
         : persistenceState === "saving"
           ? ("Saving" as const)
-          : persistenceState === "error"
-            ? ("Error" as const)
-            : savedDoc === doc
-              ? ("Saved" as const)
-              : ("Draft" as const),
+          : persistenceState === "publishing"
+            ? ("Publishing" as const)
+            : persistenceState === "error"
+              ? ("Error" as const)
+              : publishedDoc === doc
+                ? ("Published" as const)
+                : savedDoc === doc
+                  ? ("Saved" as const)
+                  : ("Draft" as const),
     canAddPath: unusedRole(doc) !== null,
     refused,
     canUndo: history.canUndo,
@@ -299,6 +342,7 @@ export function useRuleEditor() {
     addActionToSelected,
     setSelectedActions,
     save,
+    publish,
     dismissRefusal,
   };
 }
