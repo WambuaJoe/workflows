@@ -37,15 +37,15 @@ n8n cannot create/cancel executions, alter workflow definitions, or publish vers
 
 ## Execution status ownership
 
-| Operation                    | Owner                            |
-| ---------------------------- | -------------------------------- |
-| Create queued execution      | Next.js                          |
-| Observe and persist running    | Next.js n8n API adapter          |
+| Operation                     | Owner                            |
+| ----------------------------  | -------------------------------- |
+| Create queued execution       | Next.js                          |
+| Observe and persist running   | Next.js n8n API adapter          |
 | Persist node progress/results | Next.js n8n API adapter          |
 | Persist succeeded/failed      | Next.js n8n API adapter          |
-| Request cancellation         | Next.js                          |
-| Timeout/reconciliation       | Next.js (follow-up backend work) |
-| Display status/history       | Next.js                          |
+| Request cancellation          | Next.js                          |
+| Timeout/reconciliation        | Next.js (follow-up backend work) |
+| Display status/history        | Next.js                          |
 
 Allowed integration-function transitions: queued to running or failed; running to succeeded or failed. Repeating the current status is idempotent and does not overwrite terminal results. The current adapter calls these functions from Next.js after reading n8n execution data; n8n cannot set cancelled.
 
@@ -87,4 +87,4 @@ Prototype essentials: initial schema, integration schema/views/functions, separa
 
 Deferred: concrete business-data views until a source is identified, automated compatibility testing, contract deprecation tooling, advanced reconciliation/monitoring, and scheduled 30-day retention cleanup.
 
-The current schema is a single-user prototype. Multi-user row isolation is not included in this milestone. The Next.js execution API currently creates, reads and cancels database records; queued executions are not dispatched to n8n until the adapter and translator are implemented.
+The current schema is a single-user prototype. Multi-user row isolation is not included in this milestone. The Next.js execution API dispatches each execution through an active n8n webhook and synchronizes status and node results when execution history or detail is requested. Synchronization is request-driven; a background worker and automatic n8n workflow cleanup are deferred.
