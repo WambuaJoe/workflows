@@ -141,6 +141,18 @@ export function ExecutionHistory({
       setExecutions(payload.data.executions ?? []);
       setError(null);
       setLastUpdated(new Date());
+
+      if (expandedExecution) {
+        const detailResponse = await fetch("/api/executions/" + expandedExecution, {
+          cache: "no-store",
+          signal: request.signal,
+        });
+        const detailPayload = await detailResponse.json();
+        if (!detailResponse.ok || !detailPayload?.ok) {
+          throw new Error(detailPayload?.error?.message ?? "Could not refresh execution details.");
+        }
+        setDetails((current) => ({ ...current, [expandedExecution]: detailPayload.data }));
+      }
     } catch (cause) {
       if (!request.signal.aborted) {
         setError(cause instanceof Error ? cause.message : "Could not load execution history.");
@@ -151,7 +163,7 @@ export function ExecutionHistory({
       setLoading(false);
       setRefreshing(false);
     }
-  }, [workflowId]);
+  }, [workflowId, expandedExecution]);
 
   useEffect(() => {
     if (!open || !workflowId) return;
@@ -165,14 +177,8 @@ export function ExecutionHistory({
     };
   }, [open, workflowId, loadHistory]);
 
-  const toggleExecution = async (id: string) => {
-    if (expandedExecution === id) {
-      setExpandedExecution(null);
-      return;
-    }
-    setExpandedExecution(id);
-    if (details[id] || detailLoading[id]) return;
-
+  const loadExecutionDetail = async (id: string) => {
+    if (detailLoading[id]) return;
     setDetailLoading((current) => ({ ...current, [id]: true }));
     setDetailErrors((current) => ({ ...current, [id]: "" }));
     try {
@@ -190,6 +196,15 @@ export function ExecutionHistory({
     } finally {
       setDetailLoading((current) => ({ ...current, [id]: false }));
     }
+  };
+
+  const toggleExecution = (id: string) => {
+    if (expandedExecution === id) {
+      setExpandedExecution(null);
+      return;
+    }
+    setExpandedExecution(id);
+    if (!details[id]) void loadExecutionDetail(id);
   };
 
   if (!open) return null;
@@ -314,14 +329,7 @@ export function ExecutionHistory({
                           ) : detailErrors[execution.id] ? (
                             <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-alert">
                               <span>{detailErrors[execution.id]}</span>
-                              <button type="button" onClick={() => {
-                                setDetails((current) => {
-                                  const next = { ...current };
-                                  delete next[execution.id];
-                                  return next;
-                                });
-                                void toggleExecution(execution.id);
-                              }} className="rounded-md border border-line bg-white px-2.5 py-1.5 text-ink-soft">
+                              <button type="button" onClick={() => void loadExecutionDetail(execution.id)} className="rounded-md border border-line bg-white px-2.5 py-1.5 text-ink-soft">
                                 Retry
                               </button>
                             </div>
