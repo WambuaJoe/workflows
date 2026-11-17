@@ -3,9 +3,6 @@ import { failure, success } from "@/lib/server/api-response";
 import { requireDb } from "@/lib/server/db";
 import { validateDoc } from "@/lib/server/validate-doc";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 export async function POST(request: NextRequest) {
   let body: unknown;
   try {
@@ -19,7 +16,9 @@ export async function POST(request: NextRequest) {
   }
 
   const { doc, errors } = validateDoc(
-    typeof body === "object" && body !== null && "doc" in body ? (body as { doc: unknown }).doc : null,
+    typeof body === "object" && body !== null && "doc" in body
+      ? (body as { doc: unknown }).doc
+      : null,
   );
   if (!doc) {
     return failure(422, "VALIDATION_FAILED", "Workflow document has validation errors.", {
@@ -37,6 +36,10 @@ export async function POST(request: NextRequest) {
     return success({ workflow }, 201);
   } catch (error) {
     console.error("Workflow creation failed:", error);
-    return failure(503, "WORKFLOW_STORAGE_UNAVAILABLE", "Could not create the workflow. Check the database connection.");
+    return failure(
+      503,
+      "WORKFLOW_STORAGE_UNAVAILABLE",
+      "Could not create the workflow. Check the database connection.",
+    );
   }
 }

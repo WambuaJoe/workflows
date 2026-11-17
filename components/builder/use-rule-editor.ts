@@ -42,7 +42,9 @@ export function useRuleEditor() {
   const history = useHistory<Doc>(INITIAL_DOC);
   const { present: doc, set, reset } = history;
   const [savedDoc, setSavedDoc] = useState<Doc | null>(null);
-  const [persistenceState, setPersistenceState] = useState<"loading" | "ready" | "saving" | "error">("loading");
+  const [persistenceState, setPersistenceState] = useState<
+    "loading" | "ready" | "saving" | "error"
+  >("loading");
   const workflowId = useRef<string | null>(null);
   const hydrationStarted = useRef(false);
   const [selectedId, setSelectedId] = useState<string | null>("condition");
@@ -91,9 +93,10 @@ export function useRuleEditor() {
           if (!response.ok) throw new Error("Could not create the first saved workflow.");
           const payload = await response.json();
           remote = payload.data.workflow;
-          window.localStorage.setItem(storageKey, remote.id);
         }
 
+        if (!remote) throw new Error("Could not load the saved workflow.");
+        window.localStorage.setItem(storageKey, remote.id);
         workflowId.current = remote.id;
         reset(remote.doc);
         setSavedDoc(remote.doc);

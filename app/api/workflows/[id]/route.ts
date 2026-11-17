@@ -3,16 +3,14 @@ import { failure, success } from "@/lib/server/api-response";
 import { requireDb } from "@/lib/server/db";
 import { validateDoc } from "@/lib/server/validate-doc";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
-  if (!UUID_PATTERN.test(id)) return failure(400, "INVALID_WORKFLOW_ID", "Workflow ID must be a UUID.");
+  if (!UUID_PATTERN.test(id))
+    return failure(400, "INVALID_WORKFLOW_ID", "Workflow ID must be a UUID.");
 
   try {
     const db = requireDb();
@@ -26,13 +24,18 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     return success({ workflow });
   } catch (error) {
     console.error("Workflow load failed:", error);
-    return failure(503, "WORKFLOW_STORAGE_UNAVAILABLE", "Could not load the workflow. Check the database connection.");
+    return failure(
+      503,
+      "WORKFLOW_STORAGE_UNAVAILABLE",
+      "Could not load the workflow. Check the database connection.",
+    );
   }
 }
 
 export async function PUT(request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
-  if (!UUID_PATTERN.test(id)) return failure(400, "INVALID_WORKFLOW_ID", "Workflow ID must be a UUID.");
+  if (!UUID_PATTERN.test(id))
+    return failure(400, "INVALID_WORKFLOW_ID", "Workflow ID must be a UUID.");
 
   let body: unknown;
   try {
@@ -46,7 +49,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   }
 
   const { doc, errors } = validateDoc(
-    typeof body === "object" && body !== null && "doc" in body ? (body as { doc: unknown }).doc : null,
+    typeof body === "object" && body !== null && "doc" in body
+      ? (body as { doc: unknown }).doc
+      : null,
   );
   if (!doc) {
     return failure(422, "VALIDATION_FAILED", "Workflow document has validation errors.", {
@@ -89,6 +94,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     return success({ workflow });
   } catch (error) {
     console.error("Workflow save failed:", error);
-    return failure(503, "WORKFLOW_STORAGE_UNAVAILABLE", "Could not save the workflow. Check the database connection.");
+    return failure(
+      503,
+      "WORKFLOW_STORAGE_UNAVAILABLE",
+      "Could not save the workflow. Check the database connection.",
+    );
   }
 }

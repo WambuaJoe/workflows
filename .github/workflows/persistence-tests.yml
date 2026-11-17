@@ -1,0 +1,42 @@
+name: Persistence tests
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: workflows_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d workflows_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres@localhost:5432/workflows_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Apply database migrations
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/001_initial_schema.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/002_integration_contract.sql
+      - name: Run PostgreSQL tests three times
+        run: |
+          for attempt in 1 2 3; do
+            echo "Persistence test attempt ${attempt}"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/tests/002_integration_contract_permissions.sql
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/tests/003_workflow_persistence.sql
+          done
