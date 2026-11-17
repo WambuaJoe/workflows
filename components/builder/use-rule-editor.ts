@@ -64,8 +64,6 @@ export function useRuleEditor() {
   useEffect(() => {
     if (hydrationStarted.current) return;
     hydrationStarted.current = true;
-    let cancelled = false;
-
     const hydrate = async () => {
       try {
         const storageKey = "workflows.currentWorkflowId";
@@ -96,23 +94,17 @@ export function useRuleEditor() {
           window.localStorage.setItem(storageKey, remote.id);
         }
 
-        if (cancelled) return;
         workflowId.current = remote.id;
         reset(remote.doc);
         setSavedDoc(remote.doc);
         setPersistenceState("ready");
       } catch (error) {
-        if (!cancelled) {
-          console.error("Workflow hydration failed:", error);
-          setPersistenceState("error");
-        }
+        console.error("Workflow hydration failed:", error);
+        setPersistenceState("error");
       }
     };
 
     void hydrate();
-    return () => {
-      cancelled = true;
-    };
   }, [reset]);
 
   useEffect(() => {
