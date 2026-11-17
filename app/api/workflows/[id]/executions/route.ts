@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { failure, success } from "@/lib/server/api-response";
 import { requireDb } from "@/lib/server/db";
+import { createAndActivateWorkflow, dispatchWebhook } from "@/lib/server/n8n-client";
+import { translateWorkflow } from "@/lib/server/n8n-workflow";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_INPUT_BYTES = 64_000;
@@ -59,9 +61,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const db = requireDb();
     const outcome = await db.begin(async (tx) => {
       const [workflow] = await tx`
-        SELECT id, draft_definition, published_version_id
-        FROM public.workflows
-        WHERE id = ${id}::uuid
+        SELECT w.id, w.draft_definition, w.published_version_id,
+               v.definition AS published_definition
+        FROM public.workflows AS w
+        LEFT JOIN public.workflow_versions AS v
+          ON v.id = w.published_version_id AND v.workflow_id = w.id
+        WHERE w.id = ${id}::uuid
         FOR SHARE
       `;
 
@@ -92,7 +97,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
             )
           `;
 
-      return { kind: "created" as const, execution: createdRecord };
+      return {
+        kind: "created" as const,
+        execution: createdRecord,
+        definition: mode === "production" ? workflow.published_definition : workflow.draft_definition,
+      };
     });
 
     if (outcome.kind === "missing") {
