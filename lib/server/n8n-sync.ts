@@ -31,7 +31,8 @@ export async function syncN8nExecution(executionId: string) {
   if (!n8nExecutionId) return;
 
   const detail = await getExecution(n8nExecutionId);
-  const finishedStatus = terminalStatus(detail.status ?? summary?.status);
+  const n8nStatus = detail.status ?? summary?.status ?? (detail.finished ? "success" : undefined);
+  const finishedStatus = terminalStatus(n8nStatus);
   const runData = detail.data?.resultData?.runData ?? {};
 
   await db`
@@ -40,7 +41,7 @@ export async function syncN8nExecution(executionId: string) {
     WHERE id = ${executionId}::uuid
   `;
 
-  if (record.status === "queued" && (detail.status === "running" || finishedStatus)) {
+  if (record.status === "queued" && (n8nStatus === "running" || finishedStatus)) {
     await db`
       SELECT * FROM integration.v1_update_execution_status(
         ${executionId}::uuid, 'running', ${n8nExecutionId}, NULL, NULL
