@@ -38,6 +38,21 @@ export function translateWorkflow(doc: Doc, executionId: string): N8nWorkflowPay
     if (!byId.has(link.from) || !byId.has(link.to)) throw new Error("Workflow contains a link to a missing step.");
     outgoing.set(link.from, [...(outgoing.get(link.from) ?? []), link.to]);
   }
+  const visited = new Set<string>();
+  const visiting = new Set<string>();
+  const visit = (stepId: string) => {
+    if (visiting.has(stepId)) throw new Error("Workflow links cannot contain a cycle.");
+    if (visited.has(stepId)) return;
+    visiting.add(stepId);
+    for (const target of outgoing.get(stepId) ?? []) visit(target);
+    visiting.delete(stepId);
+    visited.add(stepId);
+  };
+  visit(triggers[0].id);
+  if (visited.size !== doc.steps.length) {
+    throw new Error("Every step must be connected to the workflow trigger.");
+  }
+
   for (const step of doc.steps) {
     const targets = outgoing.get(step.id) ?? [];
     if (step.kind === "condition" && targets.length > 2) {
@@ -84,7 +99,7 @@ export function translateWorkflow(doc: Doc, executionId: string): N8nWorkflowPay
             options: { caseSensitive: true, leftValue: "", typeValidation: "strict", version: 2 },
             conditions: [{
               id: randomUUID(),
-              leftValue: "={{ $json.body?.role ?? $json.role }}",
+              leftValue: "={{ $json.input?.role ?? $json.body?.input?.role ?? $json.role }}",
               rightValue: expectedRole ?? "",
               operator: { type: "string", operation: "equals" },
             }],
