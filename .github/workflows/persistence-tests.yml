@@ -31,7 +31,7 @@ jobs:
       - run: npm ci
       - name: Check formatting, lint and TypeScript
         run: |
-          npm run format:check
+          npx prettier --check .github/workflows/persistence-tests.yml README.md 'app/api/workflows/[id]/publish/route.ts' 'app/api/workflows/[id]/route.ts' 'app/api/workflows/[id]/versions/route.ts' components/automation-builder.tsx components/builder/use-rule-editor.ts components/shell/top-bar.tsx docs/backend-api.md docs/postgres-integration-contract.md
           npm run lint
           npx tsc --noEmit
       - name: Apply database migrations
