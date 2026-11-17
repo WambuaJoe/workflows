@@ -19,3 +19,5 @@ CREATE TRIGGER workflow_versions_immutable
 BEFORE UPDATE OR DELETE ON public.workflow_versions
 FOR EACH ROW
 EXECUTE FUNCTION public.prevent_workflow_version_mutation();
+
+REVOKE ALL ON FUNCTION public.prevent_workflow_version_mutation() FROM PUBLIC;
