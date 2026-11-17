@@ -3,6 +3,7 @@ import { failure, success } from "@/lib/server/api-response";
 import { requireDb } from "@/lib/server/db";
 import { createAndActivateWorkflow, dispatchWebhook } from "@/lib/server/n8n-client";
 import { translateWorkflow } from "@/lib/server/n8n-workflow";
+import { syncN8nExecution } from "@/lib/server/n8n-sync";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_INPUT_BYTES = 64_000;
@@ -156,7 +157,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     `;
     if (!workflow) return failure(404, "WORKFLOW_NOT_FOUND", "Workflow was not found.");
 
-    const executions = await db`
+    let executions = await db`
       SELECT id, workflow_version_id AS "workflowVersionId",
              execution_mode AS mode, status, input, output, error,
              n8n_workflow_id AS "n8nWorkflowId",
@@ -169,6 +170,19 @@ export async function GET(request: NextRequest, context: RouteContext) {
       LIMIT ${limit}
     `;
 
+    await Promise.all(executions.map((execution) => syncN8nExecution(String(execution.id))));
+    executions = await db`
+      SELECT id, workflow_version_id AS "workflowVersionId",
+             execution_mode AS mode, status, input, output, error,
+             n8n_workflow_id AS "n8nWorkflowId",
+             n8n_execution_id AS "n8nExecutionId",
+             started_at AS "startedAt", completed_at AS "completedAt",
+             created_at AS "createdAt"
+      FROM public.executions
+      WHERE workflow_id = ${id}::uuid
+      ORDER BY created_at DESC
+      LIMIT ${limit}
+    `;
     return success({ executions });
   } catch (error) {
     console.error("Workflow execution history load failed:", error);
