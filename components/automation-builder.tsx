@@ -39,7 +39,12 @@ export function AutomationBuilder() {
       <div className="flex h-dvh overflow-hidden bg-white text-ink">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar name={editor.doc.name} status={editor.status} onSave={editor.save} />
+          <TopBar
+            name={editor.doc.name}
+            status={editor.status}
+            onSave={editor.save}
+            onPublish={editor.publish}
+          />
           <main className="relative min-h-0 flex-1 overflow-hidden">
             <FlowCanvas
               steps={editor.steps}
