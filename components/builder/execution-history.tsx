@@ -171,10 +171,12 @@ export function ExecutionHistory({
         setError(cause instanceof Error ? cause.message : "Could not load execution history.");
       }
     } finally {
-      if (controller.current === request) controller.current = null;
-      inFlight.current = false;
-      setLoading(false);
-      setRefreshing(false);
+      if (controller.current === request) {
+        controller.current = null;
+        inFlight.current = false;
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [workflowId, expandedExecution]);
 
