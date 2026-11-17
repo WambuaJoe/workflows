@@ -314,7 +314,7 @@ export function useRuleEditor() {
             ? ("Publishing" as const)
             : persistenceState === "error"
               ? ("Error" as const)
-              : publishedDoc === doc
+              : publishedDoc !== null && JSON.stringify(publishedDoc) === JSON.stringify(doc)
                 ? ("Published" as const)
                 : savedDoc === doc
                   ? ("Saved" as const)
