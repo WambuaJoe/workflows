@@ -4,7 +4,7 @@ The API uses Next.js Route Handlers and standard JSON envelopes. Database creden
 
 ## Configuration
 
-Copy `.env.example` to `.env.local` and set `DATABASE_URL` to the dedicated Workflows PostgreSQL database. The login must inherit the `workflows_app` role created by migration 002. Do not use n8n's internal database URL and do not expose the connection string through a `NEXT_PUBLIC_*` variable.
+Copy `.env.example` to `.env.local` and set `DATABASE_URL` to the dedicated Workflows PostgreSQL database. The login must inherit the `workflows_app` role created by migration 002. Set `N8N_API_URL` to the n8n Public API root (including `/api/v1`), `N8N_API_KEY` to a key with workflow create/read/activate and execution read scopes, and `N8N_WEBHOOK_BASE_URL` to the public n8n base URL. Keep all credentials server-side. Do not use n8n's internal database URL and do not expose any secret through a `NEXT_PUBLIC_*` variable.
 
 Apply migrations 001, 002 and 003 before using the API. Migration 003 makes every saved and published version snapshot immutable; corrections are new rows, never in-place edits.
 
@@ -57,7 +57,7 @@ Every document write validates the complete document before touching the databas
 ## Current boundaries
 
 - Single-user prototype; authentication and workspace isolation are not implemented.
-- Execution records can now be created, listed, inspected and cancelled through the API. Creating a record does not yet dispatch it to n8n; the n8n translator/dispatcher and status poller are the next implementation slice.
+- Test runs translate the draft snapshot; production runs translate the immutable published snapshot. The backend creates and activates an execution-scoped n8n workflow, then dispatches its production webhook. Opening an execution detail or history refreshes its n8n status and node results.
 - Current supported document nodes/actions are the types in `lib/flow/types.ts`; unsupported node kinds are rejected.
 - The app stores the current workflow UUID in browser localStorage. This is an identifier, not a credential.
 - The database connection is server-only and uses a single connection per server process by default.
@@ -83,8 +83,8 @@ Content-Type: application/json
 { "mode": "production", "input": { "userId": "example-user" } }
 ```
 
-The server snapshots the current draft for test runs and uses the database's current published version for production runs. Callers cannot submit a production definition. Production execution creation returns `409 WORKFLOW_NOT_PUBLISHED` until a version has been published. Successful creation returns HTTP 202 with a queued execution ID.
+The server snapshots the current draft for test runs and uses the database's current published version for production runs. Callers cannot submit a production definition. Production execution creation returns `409 WORKFLOW_NOT_PUBLISHED` until a version has been published. The server translates that exact snapshot, creates and activates an n8n workflow, and invokes its production webhook. Successful dispatch returns HTTP 202 with the execution and n8n workflow IDs; n8n results are synchronized when the execution detail/history is requested.
 
 Execution input must be a JSON object no larger than 64 KB. History defaults to 20 records and accepts a maximum limit of 50. Cancellation is application-owned and only succeeds while an execution is queued or running.
 
-**Current limitation:** this API milestone persists the execution lifecycle record. It does not yet call n8n or transition queued records to running. Do not treat a queued record as dispatched until the n8n adapter milestone is complete.
+**Current limitations:** the translator supports one trigger, directed links, and conditions with at most two outgoing paths. Action steps currently emit structured action descriptors inside n8n; they do not send email, message Slack, or call third-party apps because those integrations and credentials are not yet configured. A separate n8n workflow is created per execution, so cleanup/retention is a follow-up. Status synchronization is request-driven when execution detail/history is read, not a background worker. The API is still a single-user prototype without authentication; do not expose it publicly until an access gate is implemented.
