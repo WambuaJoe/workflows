@@ -40,8 +40,10 @@ export type DeleteResult = { deleted: false } | { deleted: true; parentId: strin
 /** The rule being edited: document, history, selection and every command the UI runs. */
 export function useRuleEditor() {
   const history = useHistory<Doc>(INITIAL_DOC);
-  const { present: doc, set } = history;
+  const { present: doc, set, reset } = history;
   const [savedDoc, setSavedDoc] = useState<Doc | null>(null);
+  const [persistenceState, setPersistenceState] = useState<"loading" | "ready" | "saving" | "error">("loading");
+  const workflowId = useRef<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>("condition");
   const [refused, setRefused] = useState<RefusedEdit | null>(null);
   const refusalCount = useRef(0);
@@ -56,6 +58,59 @@ export function useRuleEditor() {
   useEffect(() => {
     latest.current = { doc, steps, selectedId };
   });
+
+  // Load the user's current workflow, creating the initial example on first use.
+  useEffect(() => {
+    let cancelled = false;
+
+    const hydrate = async () => {
+      try {
+        const storageKey = "workflows.currentWorkflowId";
+        let remote: { id: string; doc: Doc } | null = null;
+        const storedId = window.localStorage.getItem(storageKey);
+
+        if (storedId) {
+          const response = await fetch(`/api/workflows/${storedId}`, { cache: "no-store" });
+          if (response.ok) {
+            const payload = await response.json();
+            remote = payload.data.workflow;
+          } else if (response.status === 404) {
+            window.localStorage.removeItem(storageKey);
+          } else {
+            throw new Error("Could not load the saved workflow.");
+          }
+        }
+
+        if (!remote) {
+          const response = await fetch("/api/workflows", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ doc: INITIAL_DOC }),
+          });
+          if (!response.ok) throw new Error("Could not create the first saved workflow.");
+          const payload = await response.json();
+          remote = payload.data.workflow;
+          window.localStorage.setItem(storageKey, remote.id);
+        }
+
+        if (cancelled) return;
+        workflowId.current = remote.id;
+        reset(remote.doc);
+        setSavedDoc(remote.doc);
+        setPersistenceState("ready");
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Workflow hydration failed:", error);
+          setPersistenceState("error");
+        }
+      }
+    };
+
+    void hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, [reset]);
 
   useEffect(() => {
     if (!refused) return;
@@ -181,7 +236,30 @@ export function useRuleEditor() {
     [set],
   );
 
-  const save = useCallback(() => setSavedDoc(latest.current.doc), []);
+  const save = useCallback(async () => {
+    const id = workflowId.current;
+    if (!id || persistenceState === "loading" || persistenceState === "saving") return;
+
+    const snapshot = latest.current.doc;
+    setPersistenceState("saving");
+    try {
+      const response = await fetch(`/api/workflows/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doc: snapshot }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        const message = payload?.error?.message ?? "Could not save the workflow.";
+        throw new Error(message);
+      }
+      setSavedDoc(snapshot);
+      setPersistenceState("ready");
+    } catch (error) {
+      console.error("Workflow save failed:", error);
+      setPersistenceState("error");
+    }
+  }, [persistenceState]);
   const dismissRefusal = useCallback(() => setRefused(null), []);
 
   return {
@@ -190,7 +268,16 @@ export function useRuleEditor() {
     paths,
     pathRoles,
     selected,
-    status: savedDoc === doc ? ("Saved" as const) : ("Draft" as const),
+    status:
+      persistenceState === "loading"
+        ? ("Loading" as const)
+        : persistenceState === "saving"
+          ? ("Saving" as const)
+          : persistenceState === "error"
+            ? ("Error" as const)
+            : savedDoc === doc
+              ? ("Saved" as const)
+              : ("Draft" as const),
     canAddPath: unusedRole(doc) !== null,
     refused,
     canUndo: history.canUndo,
