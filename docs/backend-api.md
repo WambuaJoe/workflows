@@ -40,13 +40,13 @@ Validation responses return all detected issues, including the node ID, field, e
 
 ## Endpoints
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| POST | `/api/workflows` | Create a workflow from a validated document |
-| GET | `/api/workflows/:id` | Load the current draft |
-| PUT | `/api/workflows/:id` | Save the draft and append a saved snapshot to version history |
-| POST | `/api/workflows/:id/publish` | Atomically save and publish the current document as an immutable version |
-| GET | `/api/workflows/:id/versions` | List saved and published snapshots, newest first |
+| Method | Path                          | Purpose                                                                  |
+| ------ | ----------------------------- | ------------------------------------------------------------------------ |
+| POST   | `/api/workflows`              | Create a workflow from a validated document                              |
+| GET    | `/api/workflows/:id`          | Load the current draft                                                   |
+| PUT    | `/api/workflows/:id`          | Save the draft and append a saved snapshot to version history            |
+| POST   | `/api/workflows/:id/publish`  | Atomically save and publish the current document as an immutable version |
+| GET    | `/api/workflows/:id/versions` | List saved and published snapshots, newest first                         |
 
 Every document write validates the complete document before touching the database. Save is transactional: the current draft and its saved version snapshot commit together. Publish locks the workflow row, allocates the next version number, inserts a published snapshot and updates the current published pointer in one transaction. Publishing an unchanged current published definition is idempotent and does not create a duplicate version. Version rows cannot be updated or deleted; publish a new version to change production behavior.
 

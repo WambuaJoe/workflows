@@ -144,7 +144,7 @@ export function TopBar({ name, status, onSave, onPublish }: TopBarProps) {
           type="button"
           onClick={onPublish}
           disabled={status === "Loading" || status === "Saving" || status === "Publishing"}
-          className="h-[38px] rounded-[10px] border border-line bg-white px-3.5 text-[14px] font-medium text-ink shadow-xs transition-[background-color,transform] duration-150 ease-out hover:bg-hover motion-safe:active:scale-[0.97] disabled:cursor-wait disabled:opacity-60"
+          className="h-[38px] rounded-[10px] border border-line bg-white px-3.5 text-[14px] font-medium text-ink shadow-xs transition-[background-color,transform] duration-150 ease-out hover:bg-hover disabled:cursor-wait disabled:opacity-60 motion-safe:active:scale-[0.97]"
         >
           Publish
         </button>
@@ -152,7 +152,7 @@ export function TopBar({ name, status, onSave, onPublish }: TopBarProps) {
           type="button"
           onClick={onSave}
           disabled={status === "Loading" || status === "Saving" || status === "Publishing"}
-          className="h-[38px] rounded-[10px] bg-gradient-to-b from-[#256a81] to-brand px-4 text-[14px] font-medium text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(16_50_62/0.3)] transition-[filter,transform] duration-150 ease-out hover:brightness-110 motion-safe:active:scale-[0.97] disabled:cursor-wait disabled:opacity-60"
+          className="h-[38px] rounded-[10px] bg-gradient-to-b from-[#256a81] to-brand px-4 text-[14px] font-medium text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(16_50_62/0.3)] transition-[filter,transform] duration-150 ease-out hover:brightness-110 disabled:cursor-wait disabled:opacity-60 motion-safe:active:scale-[0.97]"
         >
           Save Rule
         </button>

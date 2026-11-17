@@ -243,7 +243,8 @@ export function useRuleEditor() {
       persistenceState === "loading" ||
       persistenceState === "saving" ||
       persistenceState === "publishing"
-    ) return;
+    )
+      return;
 
     const snapshot = latest.current.doc;
     setPersistenceState("saving");
@@ -273,7 +274,8 @@ export function useRuleEditor() {
       persistenceState === "loading" ||
       persistenceState === "saving" ||
       persistenceState === "publishing"
-    ) return;
+    )
+      return;
 
     const snapshot = latest.current.doc;
     setPersistenceState("publishing");
