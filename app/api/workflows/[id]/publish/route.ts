@@ -57,10 +57,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
         `;
         if (current) {
           const [workflow] = await tx`
-            SELECT id, name, draft_definition AS doc, updated_at AS "updatedAt",
-                   published_version_id AS "publishedVersionId"
-            FROM public.workflows
+            UPDATE public.workflows
+            SET name = ${doc.name.trim()},
+                draft_definition = ${tx.json(doc)},
+                draft_updated_at = now(),
+                updated_at = now()
             WHERE id = ${id}::uuid
+            RETURNING id, name, draft_definition AS doc, updated_at AS "updatedAt",
+                      published_version_id AS "publishedVersionId"
           `;
           return { workflow, version: current, unchanged: true };
         }
