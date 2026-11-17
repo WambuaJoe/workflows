@@ -9,9 +9,21 @@ const MAX_LIMIT = 50;
 
 type RouteContext = { params: Promise<{ id: string }> };
 type ExecutionMode = "test" | "production";
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+type JsonObject = { [key: string]: JsonValue };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isJsonObject(value: unknown): value is JsonObject {
+  return isRecord(value);
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
@@ -36,14 +48,16 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   const mode = body.mode as ExecutionMode;
-  const input = body.input === undefined ? {} : body.input;
-  if (!isRecord(input)) {
+  const inputValue: unknown = body.input === undefined ? {} : body.input;
+  if (!isJsonObject(inputValue)) {
     return failure(422, "INVALID_EXECUTION_INPUT", "Execution input must be a JSON object.");
   }
 
+  const input = inputValue as JsonObject;
+
   try {
     const db = requireDb();
-    const execution = await db.begin(async (tx) => {
+    const outcome = await db.begin(async (tx) => {
       const [workflow] = await tx`
         SELECT id, draft_definition, published_version_id
         FROM public.workflows
@@ -56,7 +70,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         return { kind: "unpublished" as const };
       }
 
-      const [created] = mode === "production"
+      const [createdRecord] = mode === "production"
         ? await tx`
             SELECT execution_id AS id, status, created_at AS "createdAt"
             FROM integration.v1_start_execution(
@@ -78,17 +92,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
             )
           `;
 
-      return { kind: "created" as const, execution };
+      return { kind: "created" as const, execution: createdRecord };
     });
 
-    if (execution.kind === "missing") {
+    if (outcome.kind === "missing") {
       return failure(404, "WORKFLOW_NOT_FOUND", "Workflow was not found.");
     }
-    if (execution.kind === "unpublished") {
+    if (outcome.kind === "unpublished") {
       return failure(409, "WORKFLOW_NOT_PUBLISHED", "Publish this workflow before starting a production execution.");
     }
 
-    return success({ execution: execution.execution }, 202);
+    return success({ execution: outcome.execution }, 202);
   } catch (error) {
     console.error("Workflow execution creation failed:", error);
     return failure(
