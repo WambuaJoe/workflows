@@ -75,9 +75,11 @@ Apply to the dedicated Workflows database, never n8n's internal database:
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/001_initial_schema.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/002_integration_contract.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/tests/002_integration_contract_permissions.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/003_immutable_workflow_versions.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/tests/004_immutable_workflow_versions.sql
 \`\`\`
 
-The commands are operator instructions. Committing these files does not apply them to a live database or configure n8n.
+The permission test is run before migration 003 because it deliberately cleans up fixture version rows. Migration 003 then makes all historical version rows immutable. The commands are operator instructions. Committing these files does not apply them to a live database or configure n8n.
 
 ## Scope
 
