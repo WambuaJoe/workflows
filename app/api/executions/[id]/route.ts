@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { failure, success } from "@/lib/server/api-response";
 import { requireDb } from "@/lib/server/db";
+import { syncN8nExecution } from "@/lib/server/n8n-sync";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -14,6 +15,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
   try {
     const db = requireDb();
+    await syncN8nExecution(id);
     const [execution] = await db`
       SELECT id, workflow_id AS "workflowId",
              workflow_version_id AS "workflowVersionId",

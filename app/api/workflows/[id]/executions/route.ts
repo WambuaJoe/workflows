@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server";
 import { failure, success } from "@/lib/server/api-response";
 import { requireDb } from "@/lib/server/db";
+import { createAndActivateWorkflow, dispatchWebhook } from "@/lib/server/n8n-client";
+import { translateWorkflow } from "@/lib/server/n8n-workflow";
+import { syncN8nExecution } from "@/lib/server/n8n-sync";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_INPUT_BYTES = 64_000;
@@ -59,10 +62,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const db = requireDb();
     const outcome = await db.begin(async (tx) => {
       const [workflow] = await tx`
-        SELECT id, draft_definition, published_version_id
-        FROM public.workflows
-        WHERE id = ${id}::uuid
-        FOR SHARE
+        SELECT w.id, w.draft_definition, w.published_version_id,
+               v.definition AS published_definition
+        FROM public.workflows AS w
+        LEFT JOIN public.workflow_versions AS v
+          ON v.id = w.published_version_id AND v.workflow_id = w.id
+        WHERE w.id = ${id}::uuid
+        FOR SHARE OF w
       `;
 
       if (!workflow) return { kind: "missing" as const };
@@ -92,7 +98,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
             )
           `;
 
-      return { kind: "created" as const, execution: createdRecord };
+      return {
+        kind: "created" as const,
+        execution: createdRecord,
+        definition: mode === "production" ? workflow.published_definition : workflow.draft_definition,
+      };
     });
 
     if (outcome.kind === "missing") {
@@ -102,7 +112,22 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return failure(409, "WORKFLOW_NOT_PUBLISHED", "Publish this workflow before starting a production execution.");
     }
 
-    return success({ execution: outcome.execution }, 202);
+    try {
+      const executionId = String(outcome.execution.id);
+      const definition = outcome.definition as unknown as import("@/lib/flow").Doc;
+      const translated = translateWorkflow(definition, executionId);
+      const n8nWorkflowId = await createAndActivateWorkflow(translated);
+      await db.unsafe("UPDATE public.executions SET n8n_workflow_id = $1 WHERE id = $2::uuid", [n8nWorkflowId, executionId]);
+      await dispatchWebhook("workflows/" + executionId, { executionId, mode, input });
+      return success({ execution: { ...outcome.execution, n8nWorkflowId } }, 202);
+    } catch (dispatchError) {
+      console.error("Workflow dispatch failed:", dispatchError);
+      await db.unsafe("SELECT * FROM integration.v1_update_execution_status($1::uuid, 'failed', NULL, NULL, $2::jsonb)", [
+        outcome.execution.id,
+        JSON.stringify({ code: "N8N_DISPATCH_FAILED", message: dispatchError instanceof Error ? dispatchError.message : "Could not dispatch execution to n8n." }),
+      ]);
+      return failure(502, "N8N_DISPATCH_FAILED", "The execution record was created, but n8n could not be started. Check the n8n connection and API key.");
+    }
   } catch (error) {
     console.error("Workflow execution creation failed:", error);
     return failure(
@@ -132,7 +157,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     `;
     if (!workflow) return failure(404, "WORKFLOW_NOT_FOUND", "Workflow was not found.");
 
-    const executions = await db`
+    let executions = await db`
       SELECT id, workflow_version_id AS "workflowVersionId",
              execution_mode AS mode, status, input, output, error,
              n8n_workflow_id AS "n8nWorkflowId",
@@ -145,6 +170,19 @@ export async function GET(request: NextRequest, context: RouteContext) {
       LIMIT ${limit}
     `;
 
+    await Promise.all(executions.map((execution) => syncN8nExecution(String(execution.id))));
+    executions = await db`
+      SELECT id, workflow_version_id AS "workflowVersionId",
+             execution_mode AS mode, status, input, output, error,
+             n8n_workflow_id AS "n8nWorkflowId",
+             n8n_execution_id AS "n8nExecutionId",
+             started_at AS "startedAt", completed_at AS "completedAt",
+             created_at AS "createdAt"
+      FROM public.executions
+      WHERE workflow_id = ${id}::uuid
+      ORDER BY created_at DESC
+      LIMIT ${limit}
+    `;
     return success({ executions });
   } catch (error) {
     console.error("Workflow execution history load failed:", error);

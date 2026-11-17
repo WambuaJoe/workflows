@@ -8,7 +8,7 @@ The Workflows database is separate from n8n's internal database. Next.js remains
 - Read interface: versioned views.
 - Write interface: versioned PostgreSQL functions.
 - n8n can read workflow drafts and published versions through separate views.
-- Next.js creates executions and handles cancellation; n8n reports running/terminal status and node results.
+- Next.js creates/cancels executions and polls n8n's Public API to synchronize running/terminal status and node results. The database functions remain the versioned write contract for a future direct n8n database integration; the current adapter does not give n8n database credentials.
 - n8n may read business data only through explicitly approved views. The current prototype schema has no business-domain tables, so no generic business-data view is created yet. Add a narrowly scoped view when a concrete business-data source is identified.
 - n8n receives no direct privileges on application tables.
 
@@ -37,17 +37,17 @@ n8n cannot create/cancel executions, alter workflow definitions, or publish vers
 
 ## Execution status ownership
 
-| Operation                    | Owner                            |
-| ---------------------------- | -------------------------------- |
-| Create queued execution      | Next.js                          |
-| Mark running                 | n8n                              |
-| Record node progress/results | n8n                              |
-| Mark succeeded/failed        | n8n                              |
-| Request cancellation         | Next.js                          |
-| Timeout/reconciliation       | Next.js (follow-up backend work) |
-| Display status/history       | Next.js                          |
+| Operation                     | Owner                            |
+| ----------------------------- | -------------------------------- |
+| Create queued execution       | Next.js                          |
+| Observe and persist running   | Next.js n8n API adapter          |
+| Persist node progress/results | Next.js n8n API adapter          |
+| Persist succeeded/failed      | Next.js n8n API adapter          |
+| Request cancellation          | Next.js                          |
+| Timeout/reconciliation        | Next.js (follow-up backend work) |
+| Display status/history        | Next.js                          |
 
-Allowed n8n transitions: queued to running or failed; running to succeeded or failed. Repeating the current status is idempotent and does not overwrite terminal results. n8n cannot set cancelled.
+Allowed integration-function transitions: queued to running or failed; running to succeeded or failed. Repeating the current status is idempotent and does not overwrite terminal results. The current adapter calls these functions from Next.js after reading n8n execution data; n8n cannot set cancelled.
 
 ## Roles and credentials
 
@@ -83,8 +83,8 @@ The permission test is run before migration 003 because it deliberately cleans u
 
 ## Scope
 
-Prototype essentials: initial schema, integration schema/views/functions, separate least-privilege roles, permission smoke test, Next.js execution-record APIs, then n8n translation/dispatch and status polling.
+Prototype essentials: initial schema, integration schema/views/functions, separate least-privilege roles, permission smoke test, Next.js execution-record APIs, then n8n translation/dispatch and request-driven status synchronization.
 
 Deferred: concrete business-data views until a source is identified, automated compatibility testing, contract deprecation tooling, advanced reconciliation/monitoring, and scheduled 30-day retention cleanup.
 
-The current schema is a single-user prototype. Multi-user row isolation is not included in this milestone. The Next.js execution API currently creates, reads and cancels database records; queued executions are not dispatched to n8n until the adapter and translator are implemented.
+The current schema is a single-user prototype. Multi-user row isolation is not included in this milestone. The Next.js execution API dispatches each execution through an active n8n webhook and synchronizes status and node results when execution history or detail is requested. Synchronization is request-driven; a background worker and automatic n8n workflow cleanup are deferred.
