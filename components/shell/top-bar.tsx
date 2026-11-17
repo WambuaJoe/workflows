@@ -26,9 +26,17 @@ type TopBarProps = {
   onSave: () => void;
   onPublish: () => void;
   onExecutionHistory: () => void;
+  canViewExecutionHistory: boolean;
 };
 
-export function TopBar({ name, status, onSave, onPublish, onExecutionHistory }: TopBarProps) {
+export function TopBar({
+  name,
+  status,
+  onSave,
+  onPublish,
+  onExecutionHistory,
+  canViewExecutionHistory,
+}: TopBarProps) {
   const [copied, setCopied] = useState(false);
   const [unread, setUnread] = useState(true);
 
@@ -84,7 +92,7 @@ export function TopBar({ name, status, onSave, onPublish, onExecutionHistory }: 
         <button
           type="button"
           onClick={onExecutionHistory}
-          disabled={status === "Loading"}
+          disabled={!canViewExecutionHistory || status === "Loading"}
           className="flex h-9 items-center gap-2 rounded-[10px] border border-line bg-white px-3 text-[13px] font-medium text-ink-soft shadow-xs transition-colors hover:bg-hover disabled:cursor-wait disabled:opacity-50"
         >
           <ClockCounterClockwiseIcon size={16} />
