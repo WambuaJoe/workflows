@@ -22,11 +22,12 @@ const swap = {
 
 type TopBarProps = {
   name: string;
-  status: "Loading" | "Draft" | "Saving" | "Saved" | "Error";
+  status: "Loading" | "Draft" | "Saving" | "Publishing" | "Saved" | "Published" | "Error";
   onSave: () => void;
+  onPublish: () => void;
 };
 
-export function TopBar({ name, status, onSave }: TopBarProps) {
+export function TopBar({ name, status, onSave, onPublish }: TopBarProps) {
   const [copied, setCopied] = useState(false);
   const [unread, setUnread] = useState(true);
 
@@ -63,7 +64,7 @@ export function TopBar({ name, status, onSave }: TopBarProps) {
           aria-live="polite"
           className={cn(
             "relative inline-grid h-[21px] shrink-0 place-items-center overflow-hidden rounded-[6px] px-2 text-[11.5px] transition-colors duration-200 ease-out",
-            status === "Saved"
+            status === "Saved" || status === "Published"
               ? "bg-success-soft text-success"
               : status === "Error"
                 ? "bg-alert-soft text-alert"
@@ -141,9 +142,17 @@ export function TopBar({ name, status, onSave }: TopBarProps) {
         </span>
         <button
           type="button"
+          onClick={onPublish}
+          disabled={status === "Loading" || status === "Saving" || status === "Publishing"}
+          className="h-[38px] rounded-[10px] border border-line bg-white px-3.5 text-[14px] font-medium text-ink shadow-xs transition-[background-color,transform] duration-150 ease-out hover:bg-hover disabled:cursor-wait disabled:opacity-60 motion-safe:active:scale-[0.97]"
+        >
+          Publish
+        </button>
+        <button
+          type="button"
           onClick={onSave}
-          disabled={status === "Loading" || status === "Saving"}
-          className="h-[38px] rounded-[10px] bg-gradient-to-b from-[#256a81] to-brand px-4 text-[14px] font-medium text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(16_50_62/0.3)] transition-[filter,transform] duration-150 ease-out hover:brightness-110 motion-safe:active:scale-[0.97] disabled:cursor-wait disabled:opacity-60"
+          disabled={status === "Loading" || status === "Saving" || status === "Publishing"}
+          className="h-[38px] rounded-[10px] bg-gradient-to-b from-[#256a81] to-brand px-4 text-[14px] font-medium text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(16_50_62/0.3)] transition-[filter,transform] duration-150 ease-out hover:brightness-110 disabled:cursor-wait disabled:opacity-60 motion-safe:active:scale-[0.97]"
         >
           Save Rule
         </button>

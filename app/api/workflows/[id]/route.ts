@@ -15,9 +15,16 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     const db = requireDb();
     const [workflow] = await db`
-      SELECT id, name, draft_definition AS doc, updated_at AS "updatedAt"
-      FROM public.workflows
-      WHERE id = ${id}::uuid
+      SELECT w.id, w.name, w.draft_definition AS doc,
+             w.updated_at AS "updatedAt",
+             w.published_version_id AS "publishedVersionId",
+             v.definition AS "publishedDoc"
+      FROM public.workflows AS w
+      LEFT JOIN public.workflow_versions AS v
+        ON v.id = w.published_version_id
+       AND v.workflow_id = w.id
+       AND v.version_kind = 'published'
+      WHERE w.id = ${id}::uuid
       LIMIT 1
     `;
     if (!workflow) return failure(404, "WORKFLOW_NOT_FOUND", "Workflow was not found.");

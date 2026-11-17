@@ -14,38 +14,38 @@ The Workflows database is separate from n8n's internal database. Next.js remains
 
 ## Views
 
-| Object | Purpose |
-| --- | --- |
-| \`integration.v1_workflows\` | Workflow metadata |
-| \`integration.v1_drafts\` | Current mutable draft definition |
+| Object                                 | Purpose                                |
+| -------------------------------------- | -------------------------------------- |
+| \`integration.v1_workflows\`           | Workflow metadata                      |
+| \`integration.v1_drafts\`              | Current mutable draft definition       |
 | \`integration.v1_published_workflows\` | Current published immutable definition |
-| \`integration.v1_execution_history\` | Execution summaries and results |
-| \`integration.v1_execution_steps\` | Node-level execution details |
+| \`integration.v1_execution_history\`   | Execution summaries and results        |
+| \`integration.v1_execution_steps\`     | Node-level execution details           |
 
 Production execution must use the current published version. The start function retrieves that definition from the database instead of trusting a caller-supplied production snapshot. Draft test runs preserve the exact supplied snapshot.
 
 ## Functions
 
-| Function | Caller | Purpose |
-| --- | --- | --- |
-| \`integration.v1_start_execution\` | Next.js / \`workflows_app\` | Create queued execution; production definition comes from current published version |
-| \`integration.v1_update_execution_status\` | n8n / \`workflows_n8n\` | Report running, succeeded or failed |
-| \`integration.v1_record_execution_step\` | n8n / \`workflows_n8n\` | Record node progress and results |
-| \`integration.v1_cancel_execution\` | Next.js / \`workflows_app\` | Cancel queued or running execution |
+| Function                                   | Caller                      | Purpose                                                                             |
+| ------------------------------------------ | --------------------------- | ----------------------------------------------------------------------------------- |
+| \`integration.v1_start_execution\`         | Next.js / \`workflows_app\` | Create queued execution; production definition comes from current published version |
+| \`integration.v1_update_execution_status\` | n8n / \`workflows_n8n\`     | Report running, succeeded or failed                                                 |
+| \`integration.v1_record_execution_step\`   | n8n / \`workflows_n8n\`     | Record node progress and results                                                    |
+| \`integration.v1_cancel_execution\`        | Next.js / \`workflows_app\` | Cancel queued or running execution                                                  |
 
 n8n cannot create/cancel executions, alter workflow definitions, or publish versions.
 
 ## Execution status ownership
 
-| Operation | Owner |
-| --- | --- |
-| Create queued execution | Next.js |
-| Mark running | n8n |
-| Record node progress/results | n8n |
-| Mark succeeded/failed | n8n |
-| Request cancellation | Next.js |
-| Timeout/reconciliation | Next.js (follow-up backend work) |
-| Display status/history | Next.js |
+| Operation                    | Owner                            |
+| ---------------------------- | -------------------------------- |
+| Create queued execution      | Next.js                          |
+| Mark running                 | n8n                              |
+| Record node progress/results | n8n                              |
+| Mark succeeded/failed        | n8n                              |
+| Request cancellation         | Next.js                          |
+| Timeout/reconciliation       | Next.js (follow-up backend work) |
+| Display status/history       | Next.js                          |
 
 Allowed n8n transitions: queued to running or failed; running to succeeded or failed. Repeating the current status is idempotent and does not overwrite terminal results. n8n cannot set cancelled.
 
@@ -75,9 +75,11 @@ Apply to the dedicated Workflows database, never n8n's internal database:
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/001_initial_schema.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/002_integration_contract.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/tests/002_integration_contract_permissions.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/003_immutable_workflow_versions.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/tests/004_immutable_workflow_versions.sql
 \`\`\`
 
-The commands are operator instructions. Committing these files does not apply them to a live database or configure n8n.
+The permission test is run before migration 003 because it deliberately cleans up fixture version rows. Migration 003 then makes all historical version rows immutable. The commands are operator instructions. Committing these files does not apply them to a live database or configure n8n.
 
 ## Scope
 

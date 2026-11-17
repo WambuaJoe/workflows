@@ -29,14 +29,27 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Check formatting, lint and TypeScript
+        run: |
+          npx prettier --check .github/workflows/persistence-tests.yml README.md 'app/api/workflows/[id]/publish/route.ts' 'app/api/workflows/[id]/route.ts' 'app/api/workflows/[id]/versions/route.ts' components/automation-builder.tsx components/builder/use-rule-editor.ts components/shell/top-bar.tsx docs/backend-api.md docs/postgres-integration-contract.md
+          npm run lint
+          npx tsc --noEmit
       - name: Apply database migrations
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/001_initial_schema.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/002_integration_contract.sql
-      - name: Run PostgreSQL tests three times
+      - name: Run pre-immutability permission test three times
+        run: |
+          for attempt in 1 2 3; do
+            echo "Permission test attempt ${attempt}"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/tests/002_integration_contract_permissions.sql
+          done
+      - name: Apply immutable version migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/003_immutable_workflow_versions.sql
+      - name: Run persistence and immutability tests three times
         run: |
           for attempt in 1 2 3; do
             echo "Persistence test attempt ${attempt}"
-            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/tests/002_integration_contract_permissions.sql
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/tests/003_workflow_persistence.sql
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/tests/004_immutable_workflow_versions.sql
           done
