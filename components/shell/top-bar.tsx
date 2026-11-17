@@ -155,6 +155,7 @@ export function TopBar({
             </motion.span>
           </AnimatePresence>
         </button>
+        {/* Outside the swapping label, so screen readers hear the change. */}
         <span className="sr-only" aria-live="polite">
           {copied ? "Link copied" : ""}
         </span>
