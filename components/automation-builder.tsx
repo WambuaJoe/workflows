@@ -46,6 +46,7 @@ export function AutomationBuilder() {
             onSave={editor.save}
             onPublish={editor.publish}
             onExecutionHistory={() => setHistoryOpen(true)}
+            canViewExecutionHistory={Boolean(editor.workflowId)}
           />
           <main className="relative min-h-0 flex-1 overflow-hidden">
             <FlowCanvas
