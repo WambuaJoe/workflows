@@ -111,7 +111,22 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return failure(409, "WORKFLOW_NOT_PUBLISHED", "Publish this workflow before starting a production execution.");
     }
 
-    return success({ execution: outcome.execution }, 202);
+    try {
+      const executionId = String(outcome.execution.id);
+      const definition = outcome.definition as unknown as import("@/lib/flow").Doc;
+      const translated = translateWorkflow(definition, executionId);
+      const n8nWorkflowId = await createAndActivateWorkflow(translated);
+      await db.unsafe("UPDATE public.executions SET n8n_workflow_id = $1 WHERE id = $2::uuid", [n8nWorkflowId, executionId]);
+      await dispatchWebhook("workflows/" + executionId, { executionId, mode, input });
+      return success({ execution: { ...outcome.execution, n8nWorkflowId } }, 202);
+    } catch (dispatchError) {
+      console.error("Workflow dispatch failed:", dispatchError);
+      await db.unsafe("SELECT * FROM integration.v1_update_execution_status($1::uuid, 'failed', NULL, NULL, $2::jsonb)", [
+        outcome.execution.id,
+        JSON.stringify({ code: "N8N_DISPATCH_FAILED", message: dispatchError instanceof Error ? dispatchError.message : "Could not dispatch execution to n8n." }),
+      ]);
+      return failure(502, "N8N_DISPATCH_FAILED", "The execution record was created, but n8n could not be started. Check the n8n connection and API key.");
+    }
   } catch (error) {
     console.error("Workflow execution creation failed:", error);
     return failure(
