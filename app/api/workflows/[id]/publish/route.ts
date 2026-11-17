@@ -53,8 +53,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
           WHERE id = ${existing.published_version_id}::uuid
             AND workflow_id = ${id}::uuid
             AND version_kind = 'published'
+            AND definition = ${tx.json(doc)}::jsonb
         `;
-        if (current?.definition && JSON.stringify(current.definition) === JSON.stringify(doc)) {
+        if (current) {
           const [workflow] = await tx`
             SELECT id, name, draft_definition AS doc, updated_at AS "updatedAt",
                    published_version_id AS "publishedVersionId"
