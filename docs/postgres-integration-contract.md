@@ -38,7 +38,7 @@ n8n cannot create/cancel executions, alter workflow definitions, or publish vers
 ## Execution status ownership
 
 | Operation                     | Owner                            |
-| ----------------------------  | -------------------------------- |
+| ----------------------------- | -------------------------------- |
 | Create queued execution       | Next.js                          |
 | Observe and persist running   | Next.js n8n API adapter          |
 | Persist node progress/results | Next.js n8n API adapter          |
