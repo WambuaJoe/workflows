@@ -30,6 +30,7 @@ export function AutomationBuilder() {
   const { selected } = editor;
   const inset = selected ? PANEL_INSET : 0;
 
+  // After a delete, keyboard focus lands on the step before it rather than falling to the page.
   const deleteStep = (id: string) => {
     const result = editor.deleteStep(id);
     if (result.deleted) focusStep(result.parentId);
