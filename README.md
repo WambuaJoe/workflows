@@ -64,19 +64,34 @@ On macOS, use <kbd>⌘</kbd> in place of <kbd>Ctrl</kbd>.
 ## Project structure
 
 ```
-app/                     Layout, page, and global styles and design tokens
-lib/flow/                The automation model: types, catalogue, geometry and edits
+.github/workflows/        GitHub Actions workflows
+app/                      Next.js app, global styles and API routes
+  api/
+    executions/[id]/      Execution details and cancellation
+    workflows/            Workflow creation and retrieval
+      [id]/
+        executions/       Start and list executions
+        publish/          Publish workflow versions
+        versions/         Published version history
 components/
-  automation-builder.tsx The Automations screen
-  builder/               Editor state, app dragging and shared step visuals
-    canvas/              Canvas, pan and zoom, step cards, connectors and toolbar
-    panel/               The properties panel, one file per section
-  shell/                 Sidebar and top bar
-  ui/                    Dropdown menu
-  icons/                 Phosphor icons at the design's sizes, plus a few original glyphs
+  automation-builder.tsx  Main Automations screen
+  builder/                Editor state, canvas, properties panel and execution history
+    canvas/               Canvas, step cards, connectors and toolbar
+    panel/                Step properties and action configuration
+  icons/                  Phosphor icons and original glyphs
+  shell/                  Sidebar and top bar
+  ui/                     Shared UI components
+db/
+  migrations/             PostgreSQL schema and integration migrations
+  tests/                  Database permission and persistence tests
+docs/                     Backend API, database contract and preview
+lib/
+  flow/                   Workflow model, catalogue, geometry and edits
+  server/                 Database access, validation and n8n integration
+  use-history.ts          Undo/redo history hook
 ```
 
-The model in `lib/flow` is plain data and pure functions with no React. Every edit returns a new document, so undo and redo are just a history of snapshots.
+The workflow model in `lib/flow` is plain data and pure functions with no React. Server-only database and n8n operations live in `lib/server`; the `app/api` routes expose workflow, publishing and execution operations.
 
 ## Recent implementations
 
