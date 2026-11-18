@@ -349,7 +349,7 @@ export function ExecutionHistory({
                             </div>
                           ) : detail ? (
                             <div className="mt-4 space-y-3">
-                              {detail.execution.error && (
+                              {Boolean(detail.execution.error) && (
                                 <DataDisclosure label="Execution error" value={detail.execution.error} />
                               )}
                               <div className="flex items-center justify-between gap-3">
@@ -374,7 +374,7 @@ export function ExecutionHistory({
                                       <div className="mt-3 space-y-2">
                                         <DataDisclosure label="Input" value={step.input} />
                                         <DataDisclosure label="Output" value={step.output} />
-                                        {step.error && <DataDisclosure label="Error" value={step.error} />}
+                                        {Boolean(step.error) && <DataDisclosure label="Error" value={step.error} />}
                                       </div>
                                     </div>
                                   ))}
