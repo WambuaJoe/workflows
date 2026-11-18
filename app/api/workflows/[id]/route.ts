@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { failure, success } from "@/lib/server/api-response";
-import { requireDb } from "@/lib/server/db";
+import { requireDb, withTransientConnectionRetry } from "@/lib/server/db";
 import { validateDoc } from "@/lib/server/validate-doc";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -14,19 +14,21 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
   try {
     const db = requireDb();
-    const [workflow] = await db`
-      SELECT w.id, w.name, w.draft_definition AS doc,
-             w.updated_at AS "updatedAt",
-             w.published_version_id AS "publishedVersionId",
-             v.definition AS "publishedDoc"
-      FROM public.workflows AS w
-      LEFT JOIN public.workflow_versions AS v
-        ON v.id = w.published_version_id
-       AND v.workflow_id = w.id
-       AND v.version_kind = 'published'
-      WHERE w.id = ${id}::uuid
-      LIMIT 1
-    `;
+    const [workflow] = await withTransientConnectionRetry(
+      async () => db`
+        SELECT w.id, w.name, w.draft_definition AS doc,
+               w.updated_at AS "updatedAt",
+               w.published_version_id AS "publishedVersionId",
+               v.definition AS "publishedDoc"
+        FROM public.workflows AS w
+        LEFT JOIN public.workflow_versions AS v
+          ON v.id = w.published_version_id
+         AND v.workflow_id = w.id
+         AND v.version_kind = 'published'
+        WHERE w.id = ${id}::uuid
+        LIMIT 1
+      `,
+    );
     if (!workflow) return failure(404, "WORKFLOW_NOT_FOUND", "Workflow was not found.");
     return success({ workflow });
   } catch (error) {

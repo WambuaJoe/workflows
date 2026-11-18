@@ -9,6 +9,63 @@ if (!connectionString && process.env.NODE_ENV === "production") {
 
 type SqlClient = ReturnType<typeof postgres>;
 
+const TRANSIENT_CONNECTION_CODES = new Set([
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "EAI_AGAIN",
+]);
+
+const RETRY_DELAYS_MS = [250, 750];
+
+function isTransientConnectionError(error: unknown, depth = 0): boolean {
+  if (!error || typeof error !== "object" || depth > 4) return false;
+
+  const candidate = error as {
+    code?: unknown;
+    errors?: unknown;
+    cause?: unknown;
+  };
+
+  if (
+    typeof candidate.code === "string" &&
+    TRANSIENT_CONNECTION_CODES.has(candidate.code)
+  ) {
+    return true;
+  }
+
+  if (Array.isArray(candidate.errors)) {
+    return candidate.errors.some((nested) =>
+      isTransientConnectionError(nested, depth + 1),
+    );
+  }
+
+  return isTransientConnectionError(candidate.cause, depth + 1);
+}
+
+function wait(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+export async function withTransientConnectionRetry<T>(
+  operation: () => Promise<T>,
+): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      const delay = RETRY_DELAYS_MS[attempt];
+      if (delay === undefined || !isTransientConnectionError(error)) {
+        throw error;
+      }
+
+      await wait(delay);
+    }
+  }
+}
+
 const globalForPostgres = globalThis as typeof globalThis & {
   workflowsSql?: SqlClient;
 };
