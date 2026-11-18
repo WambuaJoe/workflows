@@ -30,7 +30,7 @@ Then open [http://localhost:3000](http://localhost:3000).
 
 Workflow drafts and versions use a dedicated PostgreSQL database, separate from n8n's internal database.
 
-1. Copy `.env.example` to `.env.local` and set `DATABASE_URL` to a login that inherits the `workflows_app` role.
+1. Copy `.env.example` to `.env.local` and configure the dedicated PostgreSQL connection and the server-side n8n API and webhook settings.
 2. Apply migrations 001 and 002, run the integration permission test, then apply migration 003 as described in [the PostgreSQL integration contract](docs/postgres-integration-contract.md).
 3. Restart the development server.
 
@@ -78,9 +78,18 @@ components/
 
 The model in `lib/flow` is plain data and pure functions with no React. Every edit returns a new document, so undo and redo are just a history of snapshots.
 
+## Recent implementations
+
+- **n8n execution integration**: workflows can be translated into n8n workflows, activated and dispatched through webhooks. Execution status and node results are synchronized back into the application when history or execution details are requested.
+- **Execution history**: view test and production execution records from the editor, expand individual executions and inspect their step results. History refreshes automatically every 15 seconds while open.
+- **Immutable workflow versions**: published version snapshots are protected against in-place modification.
+- **Database resilience**: workflow loading retries transient PostgreSQL connection failures, without retrying application or permission errors.
+
 ## Status
 
-This is an early single-user prototype. Drafts persist in the dedicated Workflows PostgreSQL database, and publishing creates immutable version snapshots. n8n execution is not connected yet. Only the Automations screen is built, and these are placeholders for now: the other navigation items, **Ask AI**, **Invite**, notifications, **New project**, the account menu, the **⋯** on each step and the **Learn more** links.
+This is an early single-user prototype. Drafts persist in the dedicated Workflows PostgreSQL database, and publishing creates immutable version snapshots. n8n execution is integrated, including execution tracking and history synchronization. Action steps currently produce structured action descriptors; actual third-party actions such as sending emails or messages are not implemented yet.
+
+The Automations screen is the primary built interface. Other navigation items, **Ask AI**, **Invite**, notifications, **New project**, the account menu, the **⋯** on each step and the **Learn more** links remain placeholders.
 
 ## Built with
 
