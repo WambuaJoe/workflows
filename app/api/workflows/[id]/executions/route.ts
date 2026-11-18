@@ -144,9 +144,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return failure(400, "INVALID_WORKFLOW_ID", "Workflow ID must be a UUID.");
   }
 
+  const includeAll = request.nextUrl.searchParams.get("all") === "true";
   const rawLimit = Number(request.nextUrl.searchParams.get("limit") ?? DEFAULT_LIMIT);
-  if (!Number.isInteger(rawLimit) || rawLimit < 1) {
-    return failure(400, "INVALID_LIMIT", "Limit must be a whole number between 1 and 50.");
+  if (!includeAll && (!Number.isInteger(rawLimit) || rawLimit < 1)) {
+    return failure(400, "INVALID_LIMIT", "Limit must be a positive whole number.");
   }
   const limit = Math.min(rawLimit, MAX_LIMIT);
 
@@ -157,32 +158,38 @@ export async function GET(request: NextRequest, context: RouteContext) {
     `;
     if (!workflow) return failure(404, "WORKFLOW_NOT_FOUND", "Workflow was not found.");
 
-    let executions = await db`
-      SELECT id, workflow_version_id AS "workflowVersionId",
-             execution_mode AS mode, status, input, output, error,
-             n8n_workflow_id AS "n8nWorkflowId",
-             n8n_execution_id AS "n8nExecutionId",
-             started_at AS "startedAt", completed_at AS "completedAt",
-             created_at AS "createdAt"
-      FROM public.executions
-      WHERE workflow_id = ${id}::uuid
-      ORDER BY created_at DESC
-      LIMIT ${limit}
-    `;
+    const loadExecutions = () =>
+      includeAll
+        ? db`
+            SELECT id, workflow_version_id AS "workflowVersionId",
+                   execution_mode AS mode, status, input, output, error,
+                   n8n_workflow_id AS "n8nWorkflowId",
+                   n8n_execution_id AS "n8nExecutionId",
+                   started_at AS "startedAt", completed_at AS "completedAt",
+                   created_at AS "createdAt"
+            FROM public.executions
+            WHERE workflow_id = ${id}::uuid
+            ORDER BY created_at DESC
+          `
+        : db`
+            SELECT id, workflow_version_id AS "workflowVersionId",
+                   execution_mode AS mode, status, input, output, error,
+                   n8n_workflow_id AS "n8nWorkflowId",
+                   n8n_execution_id AS "n8nExecutionId",
+                   started_at AS "startedAt", completed_at AS "completedAt",
+                   created_at AS "createdAt"
+            FROM public.executions
+            WHERE workflow_id = ${id}::uuid
+            ORDER BY created_at DESC
+            LIMIT ${limit}
+          `;
 
-    await Promise.all(executions.map((execution) => syncN8nExecution(String(execution.id))));
-    executions = await db`
-      SELECT id, workflow_version_id AS "workflowVersionId",
-             execution_mode AS mode, status, input, output, error,
-             n8n_workflow_id AS "n8nWorkflowId",
-             n8n_execution_id AS "n8nExecutionId",
-             started_at AS "startedAt", completed_at AS "completedAt",
-             created_at AS "createdAt"
-      FROM public.executions
-      WHERE workflow_id = ${id}::uuid
-      ORDER BY created_at DESC
-      LIMIT ${limit}
-    `;
+    let executions = await loadExecutions();
+    const activeExecutions = executions.filter((execution) =>
+      execution.status === "queued" || execution.status === "running"
+    );
+    await Promise.all(activeExecutions.map((execution) => syncN8nExecution(String(execution.id))));
+    executions = await loadExecutions();
     return success({ executions });
   } catch (error) {
     console.error("Workflow execution history load failed:", error);

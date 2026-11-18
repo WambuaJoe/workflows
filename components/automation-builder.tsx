@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { AnimatePresence, MotionConfig } from "motion/react";
 import { AppDragChip } from "@/components/builder/app-drag-chip";
+import { ExecutionHistory } from "@/components/builder/execution-history";
 import { FlowCanvas, type CanvasApi } from "@/components/builder/canvas/flow-canvas";
 import { ErrorToast } from "@/components/builder/error-toast";
 import { focusStep } from "@/components/builder/focus";
@@ -17,6 +18,7 @@ import { appAction } from "@/lib/flow";
 export function AutomationBuilder() {
   const editor = useRuleEditor();
   const canvasApi = useRef<CanvasApi | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const appDrag = useAppDrag({
     canvasApi,
     steps: editor.steps,
@@ -44,6 +46,8 @@ export function AutomationBuilder() {
             status={editor.status}
             onSave={editor.save}
             onPublish={editor.publish}
+            onExecutionHistory={() => setHistoryOpen(true)}
+            canViewExecutionHistory={Boolean(editor.workflowId)}
           />
           <main className="relative min-h-0 flex-1 overflow-hidden">
             <FlowCanvas
@@ -107,6 +111,11 @@ export function AutomationBuilder() {
       </div>
 
       <AppDragChip drag={appDrag.drag} />
+      <ExecutionHistory
+        workflowId={editor.workflowId}
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+      />
     </MotionConfig>
   );
 }
